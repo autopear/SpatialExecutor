@@ -49,6 +49,8 @@ public class SpatialExp {
             System.exit(-1);
         }
 
+        System.out.println("Host " + config.getNodeName() + " (" + config.getPrivateIP() + ")");
+
         initScript = initScript.replace("\t", "").replace("  ", "");
         initScript = initScript.replace("RTREE_REPLACE", config.getRtreePolicy());
 
@@ -56,8 +58,8 @@ public class SpatialExp {
             Utils.runCommand(config.stopAsterixDBPath());
             Utils.runCommand(config.getResetDBPath());
         } else {
-            Utils.runRemoteCommand(config.getNodeName(), config.stopAsterixDBPath());
-            Utils.runRemoteCommand(config.getNodeName(), config.getResetDBPath());
+            Utils.runRemoteCommand(config.getNodeName(), "bash " + config.stopAsterixDBPath());
+            Utils.runRemoteCommand(config.getNodeName(), "bash " + config.getResetDBPath());
         }
         File readLogFile = new File(config.getReadLogPath());
         if (readLogFile.exists())
@@ -65,9 +67,9 @@ public class SpatialExp {
         if (config.isLocalhost())
             Utils.runCommand(config.startAsterixDBPath());
         else
-            Utils.runRemoteCommand(config.getNodeName(), config.startAsterixDBPath());
+            Utils.runRemoteCommand(config.getNodeName(), "bash " + config.startAsterixDBPath());
 
-                    DBConnector connector = new DBConnector("http://" + config.getPrivateIP() + ":19002/query/service");
+        DBConnector connector = new DBConnector("http://" + config.getPrivateIP() + ":19002/query/service");
         String sqlErr = "";
         if (connector.execute(initScript, sqlErr).isEmpty()) {
             connector.close();

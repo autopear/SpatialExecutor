@@ -49,7 +49,7 @@ public class Utils {
 
     public static int runRemoteCommand(final String node, final String cmd) {
         try {
-            ProcessBuilder builder = new ProcessBuilder("ssh", node, "\"bash -c " + cmd + "\"");
+            ProcessBuilder builder = new ProcessBuilder("bash", "-c", "ssh " + node + " \"" + cmd + "\"");
             builder.redirectErrorStream(true);
             Process process = builder.start();
             InputStream is = process.getInputStream();

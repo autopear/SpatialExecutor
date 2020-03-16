@@ -14,30 +14,79 @@ import edu.ucr.cs.SpatialLSM.common.DBConnector;
 import java.io.IOException;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ReadWorker extends IOWoker {
-    private BufferedWriter readLogWriter;
+    private final String tmpReadLogPath;
 
     public ReadWorker(Configuration config, AtomicLong pkid, long startTime) {
         super(config, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
+        tmpReadLogPath = config.getReadLogPath() + ".tmp";
         if (startTime < 1)
             System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exp = [" + config.getMinExp() + ", " + config.getMaxExp() + "]");
         else
             System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exp = [" + config.getMinExp() + ", " + config.getMaxExp() + "]");
     }
 
+    public int clearTmpFiles() {
+        File dir = new File(config.getLogsDir());
+        File [] tmpFiles = dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                if (name.startsWith(config.getTaskName() + ".read.tsv.tmp.")) {
+                    String last = name.replace(config.getTaskName() + ".read.tsv.tmp.", "");
+                    try {
+                        int id = Integer.parseInt(last);
+                        return true;
+                    } catch (NumberFormatException nfe) {
+                        return false;
+                    }
+                }
+                return false;
+            }
+        });
+        for (File tmpFile : tmpFiles) {
+            tmpFile.delete();
+        }
+        return tmpFiles.length;
+    }
+
+    public int sortMergeTmpFiles() {
+        File dir = new File(config.getLogsDir());
+        File [] tmpFiles = dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                if (name.startsWith(config.getTaskName() + ".read.tsv.tmp.")) {
+                    String last = name.replace(config.getTaskName() + ".read.tsv.tmp.", "");
+                    try {
+                        int id = Integer.parseInt(last);
+                        return true;
+                    } catch (NumberFormatException nfe) {
+                        return false;
+                    }
+                }
+                return false;
+            }
+        });
+        if (tmpFiles.length > 0) {
+            StringBuilder sb = new StringBuilder(tmpFiles[0].getAbsolutePath());
+            for (int i = 1; i < tmpFiles.length; i++)
+                sb.append(" ").append(tmpFiles[i].getAbsolutePath());
+            Utils.runCommand("cat " + sb.toString() + " | sort -n -k1,1 -k2,2 > " + config.getReadLogPath());
+            for (File tmpFile : tmpFiles) {
+                tmpFile.delete();
+            }
+        }
+        return tmpFiles.length;
+    }
+
     public Pair<Long, Long> execute() throws InterruptedException {
         reset();
-        try {
-            readLogWriter = new BufferedWriter(new FileWriter(config.getReadLogPath(), true));
-        } catch (IOException e) {
-            e.printStackTrace();
-            readLogWriter = null;
-        }
         long localStartTime = System.currentTimeMillis();
         if (config.getNumThreadsRead() == 1) {
             ReadThread w = new ReadThread(0, maxOps);
@@ -55,31 +104,15 @@ public class ReadWorker extends IOWoker {
             for (ReadThread w : threads)
                 w.join();
         }
-        if (readLogWriter != null) {
-            try {
-                readLogWriter.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                readLogWriter = null;
-            }
-        }
-        return Pair.of(showProgress(true), System.currentTimeMillis() - localStartTime);
-    }
-
-    private synchronized void writeLog(List<String> lines) {
-        if (readLogWriter != null && !lines.isEmpty()) {
-            for (String line : lines) {
-                try {
-                    readLogWriter.write(line);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        Pair<Long, Long> ret = Pair.of(showProgress(true), System.currentTimeMillis() - localStartTime);
+        Utils.print("Generating " + config.getReadLogPath());
+        sortMergeTmpFiles();
+        return ret;
     }
 
     protected class ReadThread extends IOThread {
         private final JSONParser parser;
+        private BufferedWriter readLogWriter;
 
         private ReadThread(int tid, long totoalOps) {
             super(tid, totoalOps);
@@ -123,10 +156,28 @@ public class ReadWorker extends IOWoker {
             return Pair.of(-1L, -1L);
         }
 
+        private void writeLog(List<String> lines) {
+            if (readLogWriter != null && !lines.isEmpty()) {
+                for (String line : lines) {
+                    try {
+                        readLogWriter.write(line);
+                        readLogWriter.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
         public void task() {
+            try {
+                readLogWriter = new BufferedWriter(new FileWriter(tmpReadLogPath + "." + getTid(), true));
+            } catch (IOException e) {
+                e.printStackTrace();
+                readLogWriter = null;
+            }
             DBConnector connector = new DBConnector("http://" + config.getPrivateIP() + ":19002/query/service");
             List<String> results = new ArrayList<>();
-            long total_records = pkid.get();
             String sqlErr = "";
             for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
                 int exp = randExp();
@@ -136,9 +187,13 @@ public class ReadWorker extends IOWoker {
                 double y = ThreadLocalRandom.current().nextDouble(0f, config.getSpaceHeight() - h);
                 Pair<Long, Long> res = parseResult(connector.execute(query(x, y, w, h), sqlErr));
                 if (res.getLeft() >= 0 && res.getRight() > 0)
-                    results.add(total_records + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
+                    results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
                 else
                     Utils.print(sqlErr + "\n");
+                if (results.size() == 100) {
+                    writeLog(results);
+                    results.clear();
+                }
                 showProgress(false);
                 if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())
                     break;
@@ -159,6 +214,14 @@ public class ReadWorker extends IOWoker {
             }
             connector.close();
             writeLog(results);
+            if (readLogWriter != null) {
+                try {
+                    readLogWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    readLogWriter = null;
+                }
+            }
         }
     }
 }

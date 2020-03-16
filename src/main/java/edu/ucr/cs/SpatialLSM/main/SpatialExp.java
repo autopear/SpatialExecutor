@@ -135,6 +135,7 @@ public class SpatialExp {
             long startTime = System.currentTimeMillis();
             InsertWorker iw = new InsertWorker(config, pkid, startTime);
             ReadWorker rw = new ReadWorker(config, pkid, startTime);
+            rw.clearTmpFiles();
             iw.start();
             rw.start();
             iw.join();
@@ -164,6 +165,7 @@ public class SpatialExp {
 
             long startTime = System.currentTimeMillis();
             ReadWorker rw = new ReadWorker(config, pkid, maxOps < 1 ? startTime : -1);
+            rw.clearTmpFiles();
             Pair<Long, Long> readRes = rw.execute();
             try {
                 taskWriter.write("R\t" + (++numReads) + "\t" + readRes.getLeft() + "\t" + readRes.getRight() + "\n");
@@ -181,6 +183,7 @@ public class SpatialExp {
             long startTime = System.currentTimeMillis();
             InsertWorker iw = new InsertWorker(config, pkid, startTime);
             ReadWorker rw = new ReadWorker(config, pkid, startTime);
+            rw.clearTmpFiles();
             while (true) {
                 Pair<Long, Long> insertRes = iw.execute();
                 try {

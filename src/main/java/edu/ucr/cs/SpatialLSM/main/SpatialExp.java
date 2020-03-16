@@ -52,14 +52,22 @@ public class SpatialExp {
         initScript = initScript.replace("\t", "").replace("  ", "");
         initScript = initScript.replace("RTREE_REPLACE", config.getRtreePolicy());
 
-        Utils.runCommand(config.stopAsterixDBPath());
-        Utils.runCommand(config.getResetDBPath());
+        if (config.isLocalhost()) {
+            Utils.runCommand(config.stopAsterixDBPath());
+            Utils.runCommand(config.getResetDBPath());
+        } else {
+            Utils.runRemoteCommand(config.getNodeName(), config.stopAsterixDBPath());
+            Utils.runRemoteCommand(config.getNodeName(), config.getResetDBPath());
+        }
         File readLogFile = new File(config.getReadLogPath());
         if (readLogFile.exists())
             readLogFile.delete();
-        Utils.runCommand(config.startAsterixDBPath());
+        if (config.isLocalhost())
+            Utils.runCommand(config.startAsterixDBPath());
+        else
+            Utils.runRemoteCommand(config.getNodeName(), config.startAsterixDBPath());
 
-        DBConnector connector = new DBConnector("http://" + config.getPrivateIP() + ":19002/query/service");
+                    DBConnector connector = new DBConnector("http://" + config.getPrivateIP() + ":19002/query/service");
         String sqlErr = "";
         if (connector.execute(initScript, sqlErr).isEmpty()) {
             connector.close();
@@ -208,9 +216,12 @@ public class SpatialExp {
         if (connector.execute("USE Level_Spatial;STOP FEED Spatial_Feed;", sqlErr).isEmpty())
             System.out.println("Failed to stop feed: " + sqlErr);
         connector.close();
-        Utils.runCommand(config.stopAsterixDBPath());
+        if (config.isLocalhost())
+            Utils.runCommand(config.stopAsterixDBPath());
+        else
+            Utils.runRemoteCommand(config.getNodeName(), config.stopAsterixDBPath());
 
-        System.out.println("Getting AsterixDB logs...");
+                    System.out.println("Getting AsterixDB logs...");
         if (config.isLocalhost()) {
             File pythonBin = new File("/usr/local/bin/python3");
             if (pythonBin.exists())
@@ -223,7 +234,7 @@ public class SpatialExp {
                     System.out.println("No python3 interpreter.");
             }
         } else
-            Utils.runCommand("ssh " + config.getNodeName() + "\"/usr/bin/python3 " + config.getLogParserPath() + " " + config.getTaskName() + "\"");
+            Utils.runRemoteCommand(config.getNodeName(), "/usr/bin/python3 " + config.getLogParserPath() + " " + config.getTaskName());
 
 
         String zipPath = Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".zip");

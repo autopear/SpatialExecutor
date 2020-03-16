@@ -47,6 +47,25 @@ public class Utils {
         }
     }
 
+    public static int runRemoteCommand(final String node, final String cmd) {
+        try {
+            ProcessBuilder builder = new ProcessBuilder("ssh", node, "\"bash -c " + cmd + "\"");
+            builder.redirectErrorStream(true);
+            Process process = builder.start();
+            InputStream is = process.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.replaceAll("[\r\n]", "");
+                System.out.println(line);
+            }
+            return 0;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
     public static String formatPath(final String path) {
         File f = new File(path);
         return f.getAbsolutePath();

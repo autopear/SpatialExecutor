@@ -49,8 +49,6 @@ public class SpatialExp {
             System.exit(-1);
         }
 
-        System.out.println("Host " + config.getNodeName() + " (" + config.getPrivateIP() + ")");
-
         initScript = initScript.replace("\t", "").replace("  ", "");
         initScript = initScript.replace("RTREE_REPLACE", config.getRtreePolicy());
 
@@ -238,8 +236,10 @@ public class SpatialExp {
                 else
                     System.out.println("No python3 interpreter.");
             }
-        } else
+        } else {
             Utils.runRemoteCommand(config.getNodeName(), "/usr/bin/python3 " + config.getLogParserPath() + " " + config.getTaskName());
+            Utils.runCommand("scp " + config.getNodeName() + ":" + config.getLogsDir() + "/" + config.getTaskName() + ".zip " + config.getLogsDir());
+        }
 
 
         String zipPath = Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".zip");

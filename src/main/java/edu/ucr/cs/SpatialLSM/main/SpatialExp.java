@@ -55,10 +55,10 @@ public class SpatialExp {
         initScript = initScript.replace("RTREE_REPLACE", config.getRtreePolicy());
 
         if (config.isLocalhost()) {
-            Utils.runCommand(config.stopAsterixDBPath());
+            Utils.runCommand(config.stopAsterixDBPath() + " -f");
             Utils.runCommand(config.getResetDBPath());
         } else {
-            Utils.runRemoteCommand(config.getNodeName(), "bash " + config.stopAsterixDBPath());
+            Utils.runRemoteCommand(config.getNodeName(), "bash " + config.stopAsterixDBPath() + " -f");
             Utils.runRemoteCommand(config.getNodeName(), "bash " + config.getResetDBPath());
         }
         File readLogFile = new File(config.getReadLogPath());

@@ -222,9 +222,9 @@ public class SpatialExp {
         if (config.isLocalhost())
             Utils.runCommand(config.stopAsterixDBPath());
         else
-            Utils.runRemoteCommand(config.getNodeName(), config.stopAsterixDBPath());
+            Utils.runRemoteCommand(config.getNodeName(), "bash " + config.stopAsterixDBPath());
 
-                    System.out.println("Getting AsterixDB logs...");
+        System.out.println("Getting AsterixDB logs...");
         if (config.isLocalhost()) {
             File pythonBin = new File("/usr/local/bin/python3");
             if (pythonBin.exists())
@@ -238,20 +238,24 @@ public class SpatialExp {
             }
         } else {
             Utils.runRemoteCommand(config.getNodeName(), "/usr/bin/python3 " + config.getLogParserPath() + " " + config.getTaskName());
-            Utils.runCommand("scp " + config.getNodeName() + ":" + config.getLogsDir() + "/" + config.getTaskName() + ".zip " + config.getLogsDir());
+            Utils.runCommand("scp " + config.getNodeName() + ":/home/ubuntu/level-lsm/logs/" + config.getTaskName() + ".zip " + config.getLogsDir());
         }
-
 
         String zipPath = Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".zip");
-        String [] files = {
-                Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".task.log"),
-                Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".read.tsv")
-        };
-        for (String f : files) {
-            Utils.runCommand("zip -ju " + zipPath + " " + f);
-            File file = new File(f);
-            file.delete();
-        }
+        if (new File(zipPath).exists()) {
+            String[] files = {
+                    Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".task.log"),
+                    Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".read.tsv")
+            };
+            for (String f : files) {
+                File file = new File(f);
+                if (file.exists()) {
+                    Utils.runCommand("zip -ju " + zipPath + " " + f);
+                    file.delete();
+                }
+            }
+        } else
+            System.out.println("Failed to get " + config.getTaskName() + ".zip");
         System.out.println("Done");
         System.exit(0);
     }

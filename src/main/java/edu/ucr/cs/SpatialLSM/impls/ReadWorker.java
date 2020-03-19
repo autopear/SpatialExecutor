@@ -105,7 +105,7 @@ public class ReadWorker extends IOWoker {
                 w.join();
         }
         Pair<Long, Long> ret = Pair.of(showProgress(true), System.currentTimeMillis() - localStartTime);
-        Utils.print("Generating " + config.getReadLogPath());
+        Utils.print("Generating " + config.getReadLogPath() + "\n");
         sortMergeTmpFiles();
         return ret;
     }

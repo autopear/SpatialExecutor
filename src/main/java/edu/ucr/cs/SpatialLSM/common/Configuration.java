@@ -30,6 +30,8 @@ public class Configuration {
     private long sizeLoad = -1;
     private long batchSizeInsert = -1;
     private long batchSizeRead = -1;
+    private int numBatchRead = -1;
+    private int numBatchInsert = -1;
     private int numThreadsLoad = -1;
     private int numThreadsInsert = -1;
     private int numThreadsRead = -1;
@@ -72,6 +74,10 @@ public class Configuration {
                 batchSizeInsert = Long.parseLong(jsonObject.get("batch_insert").toString());
             if (jsonObject.containsKey("batch_read"))
                 batchSizeRead = Long.parseLong(jsonObject.get("batch_read").toString());
+            if (jsonObject.containsKey("num_insert"))
+                numBatchInsert = Integer.parseInt(jsonObject.get("num_insert").toString());
+            if (jsonObject.containsKey("num_read"))
+                numBatchRead = Integer.parseInt(jsonObject.get("num_read").toString());
             if (jsonObject.containsKey("threads_load"))
                 numThreadsLoad = Integer.parseInt(jsonObject.get("threads_load").toString());
             if (jsonObject.containsKey("threads_insert"))
@@ -216,6 +222,14 @@ public class Configuration {
 
     public long getSleepRead() {
         return readSleep;
+    }
+
+    public int getNumBatchInsert() {
+        return numBatchInsert;
+    }
+
+    public int getNumBatchRead() {
+        return numBatchRead;
     }
 
     public static double randDouble(double max) {

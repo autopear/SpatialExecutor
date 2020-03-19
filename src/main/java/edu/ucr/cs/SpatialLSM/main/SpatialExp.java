@@ -179,31 +179,39 @@ public class SpatialExp {
         // Interleaved of inserts / reads
         if (taskSetting.compareTo("IR") == 0 || taskSetting.compareTo("LIR") == 0) {
             long startTime = System.currentTimeMillis();
-            InsertWorker iw = new InsertWorker(config, pkid, startTime);
-            ReadWorker rw = new ReadWorker(config, pkid, startTime);
+            InsertWorker iw = new InsertWorker(config, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);
+            ReadWorker rw = new ReadWorker(config, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
             rw.clearTmpFiles();
             while (true) {
-                Pair<Long, Long> insertRes = iw.execute();
-                try {
-                    taskWriter.write("I\t" + (++numInserts) + "\t" + insertRes.getLeft() + "\t" + insertRes.getRight() + "\n");
-                    taskWriter.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    connector.close();
-                    System.exit(-1);
+                if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
+                    Pair<Long, Long> insertRes = iw.execute();
+                    try {
+                        taskWriter.write("I\t" + (++numInserts) + "\t" + insertRes.getLeft() + "\t" + insertRes.getRight() + "\n");
+                        taskWriter.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        connector.close();
+                        System.exit(-1);
+                    }
                 }
-                if (System.currentTimeMillis() - startTime >= config.getDuration())
+                if ((config.getNumBatchInsert() > 0 && numInserts == config.getNumBatchInsert() &&
+                        config.getNumBatchRead() > 0 && numReads == config.getNumBatchRead()) ||
+                        (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                     break;
-                Pair<Long, Long> readRes = rw.execute();
-                try {
-                    taskWriter.write("R\t" + (++numReads) + "\t" + readRes.getLeft() + "\t" + readRes.getRight() + "\n");
-                    taskWriter.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    connector.close();
-                    System.exit(-1);
+                if (config.getNumBatchRead() < 1 || numReads < config.getNumBatchRead()) {
+                    Pair<Long, Long> readRes = rw.execute();
+                    try {
+                        taskWriter.write("R\t" + (++numReads) + "\t" + readRes.getLeft() + "\t" + readRes.getRight() + "\n");
+                        taskWriter.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        connector.close();
+                        System.exit(-1);
+                    }
                 }
-                if (System.currentTimeMillis() - startTime >= config.getDuration())
+                if ((config.getNumBatchInsert() > 0 && numInserts == config.getNumBatchInsert() &&
+                        config.getNumBatchRead() > 0 && numReads == config.getNumBatchRead()) ||
+                        (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                     break;
             }
         }

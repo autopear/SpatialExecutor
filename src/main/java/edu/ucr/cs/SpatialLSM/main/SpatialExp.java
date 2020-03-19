@@ -138,6 +138,8 @@ public class SpatialExp {
             rw.start();
             iw.join();
             rw.join();
+            System.out.println("Generating " + config.getReadLogPath());
+            rw.sortMergeTmpFiles();
             Pair<Long, Long> insertRes = iw.getResult();
             Pair<Long, Long> readRes = rw.getResult();
             try {
@@ -165,6 +167,8 @@ public class SpatialExp {
             ReadWorker rw = new ReadWorker(config, pkid, maxOps < 1 ? startTime : -1);
             rw.clearTmpFiles();
             Pair<Long, Long> readRes = rw.execute();
+            System.out.println("Generating " + config.getReadLogPath());
+            rw.sortMergeTmpFiles();
             try {
                 taskWriter.write("R\t" + (++numReads) + "\t" + readRes.getLeft() + "\t" + readRes.getRight() + "\n");
                 taskWriter.flush();
@@ -214,6 +218,8 @@ public class SpatialExp {
                         (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                     break;
             }
+            System.out.println("Generating " + config.getReadLogPath());
+            rw.sortMergeTmpFiles();
         }
 
         try {

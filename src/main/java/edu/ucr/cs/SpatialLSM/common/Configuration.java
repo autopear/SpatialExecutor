@@ -37,7 +37,7 @@ public class Configuration {
     private int numThreadsRead = -1;
     private double spaceWidth = -1;
     private double spaceHeight = -1;
-    private double [] exps;
+    private double [] scales;
     private long loadSleep = -1;
     private long insertSleep = -1;
     private long readSleep = -1;
@@ -88,20 +88,11 @@ public class Configuration {
                 spaceWidth = Double.parseDouble(space.get(0).toString());
                 spaceHeight = Double.parseDouble(space.get(1).toString());
             }
-            if (jsonObject.containsKey("exps")) {
-                JSONArray cExps = (JSONArray) jsonObject.get("exps");
-                exps = new double[cExps.size()];
-                for (int i = 0; i < cExps.size(); i++)
-                    exps[i] = Double.parseDouble(cExps.get(i).toString());
-            } else if (jsonObject.containsKey("exp")) {
-                JSONArray cExps = (JSONArray) jsonObject.get("exp");
-                if (cExps.size() == 2) {
-                    int minExp = Integer.parseInt(cExps.get(0).toString());
-                    int maxExp = Integer.parseInt(cExps.get(1).toString());
-                    exps = new double[maxExp - minExp + 1];
-                    for (int i = 0; i <= maxExp - minExp; i++)
-                        exps[i] = minExp + i;
-                }
+            if (jsonObject.containsKey("scales")) {
+                JSONArray arr = (JSONArray) jsonObject.get("exps");
+                scales = new double[arr.size()];
+                for (int i = 0; i < arr.size(); i++)
+                    scales[i] = Double.parseDouble(arr.get(i).toString());
             }
             if (jsonObject.containsKey("sleep_load"))
                 loadSleep = Long.parseLong(jsonObject.get("sleep_load").toString());
@@ -213,8 +204,8 @@ public class Configuration {
         return logsDir;
     }
 
-    public double[] getExps() {
-        return exps;
+    public double[] getScales() {
+        return scales;
     }
 
     public long getSleepLoad() {

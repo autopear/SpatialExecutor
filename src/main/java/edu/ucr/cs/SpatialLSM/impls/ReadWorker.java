@@ -28,14 +28,14 @@ public class ReadWorker extends IOWoker {
         super(config, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
 
-        StringBuilder sb = new StringBuilder(Double.toString(config.getExps()[0]));
-        for (int i = 1; i< config.getExps().length; i++)
-            sb.append(", ").append(config.getExps()[i]);
+        StringBuilder sb = new StringBuilder(Double.toString(config.getScales()[0]));
+        for (int i = 1; i< config.getScales().length; i++)
+            sb.append(", ").append(config.getScales()[i]);
 
         if (startTime < 1)
-            System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exps = [" + sb.toString() + "]");
+            System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", scales = [" + sb.toString() + "]");
         else
-            System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exps = [" + sb.toString() + "]");
+            System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", scales = [" + sb.toString() + "]");
     }
 
     public int clearTmpFiles() {
@@ -122,8 +122,8 @@ public class ReadWorker extends IOWoker {
             parser = new JSONParser();
         }
 
-        private double randExp() {
-            return config.getExps()[ThreadLocalRandom.current().nextInt(0, config.getExps().length)];
+        private double randScale() {
+            return config.getScales()[ThreadLocalRandom.current().nextInt(0, config.getScales().length)];
         }
 
         private String query(double x, double y, double w, double h) {
@@ -183,14 +183,14 @@ public class ReadWorker extends IOWoker {
             List<String> results = new ArrayList<>();
             String sqlErr = "";
             for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                double exp = randExp();
-                double w = config.getSpaceWidth() * Math.pow(10, -exp);
-                double h = config.getSpaceHeight() * Math.pow(10, -exp);
+                double scale = randScale();
+                double w = config.getSpaceWidth() * scale;
+                double h = config.getSpaceHeight() * scale;
                 double x = ThreadLocalRandom.current().nextDouble(0f, config.getSpaceWidth() - w);
                 double y = ThreadLocalRandom.current().nextDouble(0f, config.getSpaceHeight() - h);
                 Pair<Long, Long> res = parseResult(connector.execute(query(x, y, w, h), sqlErr));
                 if (res.getLeft() >= 0 && res.getRight() > 0)
-                    results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
+                    results.add(pkid.get() + "\t" + scale + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
                 else
                     Utils.print(sqlErr + "\n");
                 if (results.size() == 100) {

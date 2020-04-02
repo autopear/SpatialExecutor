@@ -27,10 +27,15 @@ public class ReadWorker extends IOWoker {
     public ReadWorker(Configuration config, AtomicLong pkid, long startTime) {
         super(config, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
+
+        StringBuilder sb = new StringBuilder(Double.toString(config.getExps()[0]));
+        for (int i = 1; i< config.getExps().length; i++)
+            sb.append(", ").append(config.getExps()[i]);
+
         if (startTime < 1)
-            System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exp = [" + config.getMinExp() + ", " + config.getMaxExp() + "]");
+            System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exps = [" + sb.toString() + "]");
         else
-            System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exp = [" + config.getMinExp() + ", " + config.getMaxExp() + "]");
+            System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead() + ", exps = [" + sb.toString() + "]");
     }
 
     public int clearTmpFiles() {
@@ -117,8 +122,8 @@ public class ReadWorker extends IOWoker {
             parser = new JSONParser();
         }
 
-        private int randExp() {
-            return ThreadLocalRandom.current().nextInt(config.getMinExp(), config.getMaxExp() + 1);
+        private double randExp() {
+            return config.getExps()[ThreadLocalRandom.current().nextInt(0, config.getExps().length)];
         }
 
         private String query(double x, double y, double w, double h) {
@@ -178,7 +183,7 @@ public class ReadWorker extends IOWoker {
             List<String> results = new ArrayList<>();
             String sqlErr = "";
             for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                int exp = randExp();
+                double exp = randExp();
                 double w = config.getSpaceWidth() * Math.pow(10, -exp);
                 double h = config.getSpaceHeight() * Math.pow(10, -exp);
                 double x = ThreadLocalRandom.current().nextDouble(0f, config.getSpaceWidth() - w);

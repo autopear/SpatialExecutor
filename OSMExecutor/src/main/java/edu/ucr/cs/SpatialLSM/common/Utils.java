@@ -102,26 +102,26 @@ public class Utils {
 
     public static byte [] double2bytes(double number) {
         float f = (float)number;
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Float.BYTES);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
         byteBuffer.order(ByteOrder.BIG_ENDIAN);
-        byteBuffer.putFloat(f);
+        byteBuffer.putDouble(f);
         return byteBuffer.array();
     }
 
     public static double bytes2double(byte[] bs){
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Float.BYTES);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
         byteBuffer.order(ByteOrder.BIG_ENDIAN);
         byteBuffer.put(bs);
         byteBuffer.flip();
-        return byteBuffer.getFloat();
+        return byteBuffer.getDouble();
     }
 
     public static double bytes2double(byte[] bs, int s, int l){
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Float.BYTES);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
         byteBuffer.order(ByteOrder.BIG_ENDIAN);
         byteBuffer.put(bs, s, l);
         byteBuffer.flip();
-        return byteBuffer.getFloat();
+        return byteBuffer.getDouble();
     }
 
 }

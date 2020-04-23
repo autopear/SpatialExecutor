@@ -143,21 +143,7 @@ public class Configuration {
         String output = Utils.getCommandOutput("ssh " + host + " \"hostname -I | awk '{{print $1}}'\"");
         return output.replaceAll("[\r\n]]", "").trim();
     }
-
-    private static double str2d(String s) {
-        String ss = s.toLowerCase();
-        if (ss.contains("e"))
-            return Double.parseDouble(ss);
-        else {
-            String[] ds = ss.split("e");
-            if (ds.length != 2)
-                throw new NumberFormatException(s + " cannot be parsed to double type.");
-            double b = Double.parseDouble(ds[0]);
-            double e = Double.parseDouble(ds[1].startsWith("+") ? ds[1].substring(1) : ds[1]);
-            return Math.pow(b, e);
-        }
-    }
-
+    
     public boolean isValid() {
         return configIsValid;
     }

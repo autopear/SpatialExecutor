@@ -18,13 +18,11 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
 public class ReadWorker extends IOWoker {
     private final String tmpReadLogPath;
-    private final byte[] numBuf = new byte[Float.BYTES * 3];
 
     public ReadWorker(Configuration config, GZIPInputStream gis, AtomicLong pkid, long startTime) {
         super(config, gis, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
@@ -114,6 +112,7 @@ public class ReadWorker extends IOWoker {
     protected class ReadThread extends IOThread {
         private final JSONParser parser;
         private BufferedWriter readLogWriter;
+        private final byte[] numBuf = new byte[Double.BYTES * 3];
 
         private ReadThread(int tid, long totoalOps) {
             super(tid, totoalOps);
@@ -179,9 +178,9 @@ public class ReadWorker extends IOWoker {
             try {
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
                     gzis.read(numBuf);
-                    float exp = (float)(Utils.bytes2double(numBuf, 0, Float.BYTES));
-                    double x = Utils.bytes2double(numBuf, Float.BYTES, Float.BYTES);
-                    double y = Utils.bytes2double(numBuf, Float.BYTES * 2, Float.BYTES);
+                    double exp = Utils.bytes2double(numBuf, 0, Double.BYTES);
+                    double x = Utils.bytes2double(numBuf, Double.BYTES, Double.BYTES);
+                    double y = Utils.bytes2double(numBuf, Double.BYTES * 2, Double.BYTES);
 
                     double w = 360.0 / Math.pow(10, exp);
                     double h = 180.0 / Math.pow(10, exp);

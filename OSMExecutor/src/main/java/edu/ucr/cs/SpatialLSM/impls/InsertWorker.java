@@ -15,8 +15,6 @@ import edu.ucr.cs.SpatialLSM.apis.IOThread;
 
 public class InsertWorker extends IOWoker {
 
-    private final byte[] numBuf = new byte[Float.BYTES * 2];
-
     public InsertWorker(Configuration config, GZIPInputStream gis, AtomicLong pkid, long startTime) {
         super(config, gis, pkid, config.getBatchSizeInsert(), startTime, "Insert: ");
         if (startTime < 1)
@@ -36,6 +34,8 @@ public class InsertWorker extends IOWoker {
 
     private class InsertThread extends IOThread {
 
+        private final byte[] numBuf = new byte[Double.BYTES * 2];
+
         private InsertThread(int tid, long totoalOps) {
             super(tid, totoalOps);
         }
@@ -48,8 +48,8 @@ public class InsertWorker extends IOWoker {
                 PrintWriter feedWriter = new PrintWriter(sock.getOutputStream());
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
                     gzis.read(numBuf);
-                    double lon = Utils.bytes2double(numBuf, 0, Float.BYTES);
-                    double lat = Utils.bytes2double(numBuf, Float.BYTES, Float.BYTES);
+                    double lon = Utils.bytes2double(numBuf, 0, Double.BYTES);
+                    double lat = Utils.bytes2double(numBuf, Double.BYTES, Double.BYTES);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
                     if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())

@@ -20,7 +20,7 @@ public class RandomExp {
 
     public static void main(String[] args) throws InterruptedException {
         if (args.length != 3) {
-            System.out.println("SpatialExp TASK INIT_SCRIPT NODE");
+            System.out.println("RandomExp TASK INIT_SCRIPT NODE");
             System.exit(0);
         }
 

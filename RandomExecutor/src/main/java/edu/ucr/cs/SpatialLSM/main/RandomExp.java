@@ -16,7 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SpatialExp {
+public class RandomExp {
 
     public static void main(String[] args) throws InterruptedException {
         if (args.length != 3) {

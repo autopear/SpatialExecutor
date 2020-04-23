@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.ucr.cs.dblab</groupId>
-    <artifactId>SpatialExecutor</artifactId>
+    <artifactId>OSMExecutor</artifactId>
     <version>1.0-SNAPSHOT</version>
     <build>
         <plugins>
@@ -24,7 +24,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.ucr.cs.SpatialLSM.main.SpatialExp</mainClass>
+                            <mainClass>org.ucr.cs.SpatialLSM.main.OSMExp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -42,7 +42,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>edu.ucr.cs.SpatialLSM.main.SpatialExp</mainClass>
+                            <mainClass>edu.ucr.cs.SpatialLSM.main.OSMExp</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

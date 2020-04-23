@@ -1,0 +1,25 @@
+{ 
+   "node":"localhost",
+   "task":"rand-local",
+   "duration":30,
+   "feed_port":10001,
+   "asterixdb":"/home/merlin/Desktop/spatial-test/asterixdb",
+   "reset_db":"/home/merlin/Desktop/spatial-test/scripts/reset_db.sh",
+   "log_parser":"/home/merlin/Desktop/spatial-test/scripts/parse_log.py",
+   "logs_dir":"/home/merlin/Desktop/spatial-test/logs",
+   "feed_port":10001,
+   "size_load":50000,
+   "threads_load":4,
+   "threads_insert":4,
+   "threads_read":4,
+   "space":[100, 100],
+   "exp":[1, 10],
+   "rtree":{ 
+      "name":"level",
+      "parameters":{
+         "num-components-0":2,
+         "num-components-1":8,
+		 "pick":"min-overlap"
+      }
+   }
+}

@@ -1,0 +1,28 @@
+DROP DATAVERSE Level_Spatial IF EXISTS;
+CREATE DATAVERSE Level_Spatial;
+USE Level_Spatial;
+CREATE TYPE Spatial_Type AS CLOSED {
+	id: bigint,
+	geo: point,
+	data: binary
+};
+CREATE DATASET Spatial_Table (Spatial_Type) PRIMARY KEY id
+	WITH {
+		"merge-policy":{
+			"name":"binomial",
+			"parameters":{
+				"num-components":8,
+				"rtree-index":"RTREE_REPLACE"
+			}
+		}
+	};
+CREATE INDEX rtreeidx ON Spatial_Table(geo) TYPE RTREE;
+CREATE FEED Spatial_Feed WITH {
+	"adapter-name":"socket_adapter",
+	"sockets":"127.0.0.1:10001",
+	"address-type":"IP",
+	"type-name":"Spatial_Type",
+	"format":"adm",
+	"upsert-feed":"true"
+};
+CONNECT FEED Spatial_Feed TO DATASET Spatial_Table;

@@ -8,17 +8,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.GZIPInputStream;
+import java.io.InputStream;
 
 import edu.ucr.cs.SpatialLSM.apis.IOThread;
 import edu.ucr.cs.SpatialLSM.apis.IOWoker;
 
 public class LoadWorker extends IOWoker {
-    
-    public LoadWorker(Configuration config, GZIPInputStream gis, AtomicLong pkid, long startTime) {
-        super(config, gis, pkid, config.getSizeLoad(), startTime, "Load:   ");
+
+    public LoadWorker(Configuration config, InputStream inStream, AtomicLong pkid, long startTime) {
+        super(config, inStream, pkid, config.getSizeLoad(), startTime, "Load:   ");
         if (startTime < 1)
             System.out.println("Load: size = " + maxOps + ", sleep = " + config.getSleepLoad());
         else
@@ -35,7 +33,7 @@ public class LoadWorker extends IOWoker {
 
     private class LoadThreadWorker extends IOThread {
 
-        private final byte[] numBuf = new byte[Double.BYTES * 2];
+        private final byte[] numBuf = new byte[Float.BYTES * 2];
 
         private LoadThreadWorker(int tid, long totoalOps) {
             super(tid, totoalOps);
@@ -48,9 +46,9 @@ public class LoadWorker extends IOWoker {
                 sock.setKeepAlive(true);
                 PrintWriter feedWriter = new PrintWriter(sock.getOutputStream());
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                    gzis.read(numBuf);
-                    double lon = Utils.bytes2double(numBuf, 0, Double.BYTES);
-                    double lat = Utils.bytes2double(numBuf, Double.BYTES, Double.BYTES);
+                    inStream.read(numBuf);
+                    float lon = Utils.bytes2float(numBuf, 0, Float.BYTES);
+                    float lat = Utils.bytes2float(numBuf, Float.BYTES, Float.BYTES);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
                     if (getTotoalOps() < 1 && startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())

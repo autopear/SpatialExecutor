@@ -11,6 +11,7 @@ import edu.ucr.cs.SpatialLSM.apis.IOWoker;
 import edu.ucr.cs.SpatialLSM.apis.IOThread;
 import edu.ucr.cs.SpatialLSM.common.DBConnector;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,13 +20,12 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPInputStream;
 
 public class ReadWorker extends IOWoker {
     private final String tmpReadLogPath;
 
-    public ReadWorker(Configuration config, GZIPInputStream gis, AtomicLong pkid, long startTime) {
-        super(config, gis, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
+    public ReadWorker(Configuration config, InputStream inStream, AtomicLong pkid, long startTime) {
+        super(config, inStream, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
 
         if (startTime < 1)
@@ -112,14 +112,14 @@ public class ReadWorker extends IOWoker {
     protected class ReadThread extends IOThread {
         private final JSONParser parser;
         private BufferedWriter readLogWriter;
-        private final byte[] numBuf = new byte[Double.BYTES * 3];
+        private final byte[] numBuf = new byte[Float.BYTES * 3];
 
         private ReadThread(int tid, long totoalOps) {
             super(tid, totoalOps);
             parser = new JSONParser();
         }
 
-        private String query(double x, double y, double w, double h) {
+        private String query(float x, float y, double w, double h) {
             return "USE Level_Spatial;" +
                     "SELECT COUNT(*) AS cnt FROM Spatial_Table WHERE SPATIAL_INTERSECT(geo, rectangle(\"" +
                     x + "," + y + " " + (x + w) + "," + (y + h) + "\"));";
@@ -177,10 +177,10 @@ public class ReadWorker extends IOWoker {
             String sqlErr = "";
             try {
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                    gzis.read(numBuf);
-                    double exp = Utils.bytes2double(numBuf, 0, Double.BYTES);
-                    double x = Utils.bytes2double(numBuf, Double.BYTES, Double.BYTES);
-                    double y = Utils.bytes2double(numBuf, Double.BYTES * 2, Double.BYTES);
+                    inStream.read(numBuf);
+                    float exp = Utils.bytes2float(numBuf, 0, Float.BYTES);
+                    float x = Utils.bytes2float(numBuf, Float.BYTES, Float.BYTES);
+                    float y = Utils.bytes2float(numBuf, Float.BYTES * 2, Float.BYTES);
 
                     double w = 360.0 / Math.pow(10, exp);
                     double h = 180.0 / Math.pow(10, exp);

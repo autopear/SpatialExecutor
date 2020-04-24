@@ -4,19 +4,19 @@ import edu.ucr.cs.SpatialLSM.common.Configuration;
 import edu.ucr.cs.SpatialLSM.common.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPInputStream;
 
 import edu.ucr.cs.SpatialLSM.apis.IOWoker;
 import edu.ucr.cs.SpatialLSM.apis.IOThread;
 
 public class InsertWorker extends IOWoker {
 
-    public InsertWorker(Configuration config, GZIPInputStream gis, AtomicLong pkid, long startTime) {
-        super(config, gis, pkid, config.getBatchSizeInsert(), startTime, "Insert: ");
+    public InsertWorker(Configuration config, InputStream inStream, AtomicLong pkid, long startTime) {
+        super(config, inStream, pkid, config.getBatchSizeInsert(), startTime, "Insert: ");
         if (startTime < 1)
             System.out.println("Insert: size = " + maxOps + ", sleep = " + config.getSleepInsert());
         else
@@ -34,7 +34,7 @@ public class InsertWorker extends IOWoker {
 
     private class InsertThread extends IOThread {
 
-        private final byte[] numBuf = new byte[Double.BYTES * 2];
+        private final byte[] numBuf = new byte[Float.BYTES * 2];
 
         private InsertThread(int tid, long totoalOps) {
             super(tid, totoalOps);
@@ -47,9 +47,9 @@ public class InsertWorker extends IOWoker {
                 sock.setKeepAlive(true);
                 PrintWriter feedWriter = new PrintWriter(sock.getOutputStream());
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                    gzis.read(numBuf);
-                    double lon = Utils.bytes2double(numBuf, 0, Double.BYTES);
-                    double lat = Utils.bytes2double(numBuf, Double.BYTES, Double.BYTES);
+                    inStream.read(numBuf);
+                    float lon = Utils.bytes2float(numBuf, 0, Float.BYTES);
+                    float lat = Utils.bytes2float(numBuf, Float.BYTES, Float.BYTES);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
                     if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())

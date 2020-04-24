@@ -13,11 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
-import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipEntry;
 
 public class OSMExp {
 
     public static void main(String[] args) throws InterruptedException {
+        System.out.println(getFileName("assf/sdfsfsf.zip"));
+
         if (args.length != 3) {
             System.out.println("OSMExp TASK INIT_SCRIPT NODE");
             System.exit(0);
@@ -99,10 +102,11 @@ public class OSMExp {
             System.exit(-1);
         }
 
-        try (FileInputStream wfis = new FileInputStream(writeFile);
-             FileInputStream rfis = new FileInputStream(readFile);
-             GZIPInputStream wgis = new GZIPInputStream(wfis);
-             GZIPInputStream rgis = new GZIPInputStream(rfis)) {
+        try {
+            ZipFile writeZip = new ZipFile(writeFile);
+            ZipEntry writeEntry = writeZip.getEntry(getFileName(config.getWriteDataPath()));
+            InputStream writeStream = writeZip.getInputStream(writeEntry);
+
             // Has a pre load phase
             if (taskSetting.startsWith("L")) {
                 long maxOps = config.getSizeLoad();
@@ -112,13 +116,15 @@ public class OSMExp {
                     connector.close();
                     System.exit(-1);
                 }
-                LoadWorker lw = new LoadWorker(config, wgis, pkid, maxOps < 1 ? System.currentTimeMillis() : -1);
+                LoadWorker lw = new LoadWorker(config, writeStream, pkid, maxOps < 1 ? System.currentTimeMillis() : -1);
                 Pair<Long, Long> loadRes = lw.execute();
                 try {
                     taskWriter.write("L\t0\t" + loadRes.getLeft() + "\t" + loadRes.getRight() + "\n");
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    writeStream.close();
+                    writeZip.close();
                     connector.close();
                     System.exit(-1);
                 }
@@ -137,9 +143,12 @@ public class OSMExp {
                     connector.close();
                     System.exit(-1);
                 }
+                ZipFile readZip = new ZipFile(readFile);
+                ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
+                InputStream readStream = readZip.getInputStream(readEntry);
                 long startTime = System.currentTimeMillis();
-                InsertWorker iw = new InsertWorker(config, wgis, pkid, startTime);
-                ReadWorker rw = new ReadWorker(config, rgis, pkid, startTime);
+                InsertWorker iw = new InsertWorker(config, writeStream, pkid, startTime);
+                ReadWorker rw = new ReadWorker(config, readStream, pkid, startTime);
                 rw.clearTmpFiles();
                 iw.start();
                 rw.start();
@@ -155,9 +164,15 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    readStream.close();
+                    readZip.close();
+                    writeStream.close();
+                    writeZip.close();
                     connector.close();
                     System.exit(-1);
                 }
+                readStream.close();
+                readZip.close();
             }
 
             // Pure reads
@@ -169,9 +184,11 @@ public class OSMExp {
                     connector.close();
                     System.exit(-1);
                 }
-
+                ZipFile readZip = new ZipFile(readFile);
+                ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
+                InputStream readStream = readZip.getInputStream(readEntry);
                 long startTime = System.currentTimeMillis();
-                ReadWorker rw = new ReadWorker(config, rgis, pkid, maxOps < 1 ? startTime : -1);
+                ReadWorker rw = new ReadWorker(config, readStream, pkid, maxOps < 1 ? startTime : -1);
                 rw.clearTmpFiles();
                 Pair<Long, Long> readRes = rw.execute();
                 System.out.println("Generating " + config.getReadLogPath());
@@ -181,17 +198,26 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    readStream.close();
+                    readZip.close();
+                    writeStream.close();
+                    writeZip.close();
                     connector.close();
                     System.exit(-1);
                 }
                 System.out.println("Elapsed " + Utils.durationToString(Math.round((double)(System.currentTimeMillis() - startTime) / 1000)));
+                readStream.close();
+                readZip.close();
             }
 
             // Interleaved of inserts / reads
             if (taskSetting.compareTo("IR") == 0 || taskSetting.compareTo("LIR") == 0) {
+                ZipFile readZip = new ZipFile(readFile);
+                ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
+                InputStream readStream = readZip.getInputStream(readEntry);
                 long startTime = System.currentTimeMillis();
-                InsertWorker iw = new InsertWorker(config, wgis, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);
-                ReadWorker rw = new ReadWorker(config, rgis, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
+                InsertWorker iw = new InsertWorker(config, writeStream, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);
+                ReadWorker rw = new ReadWorker(config, readStream, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
                 rw.clearTmpFiles();
                 while (true) {
                     if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
@@ -201,6 +227,10 @@ public class OSMExp {
                             taskWriter.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
+                            readStream.close();
+                            readZip.close();
+                            writeStream.close();
+                            writeZip.close();
                             connector.close();
                             System.exit(-1);
                         }
@@ -216,6 +246,10 @@ public class OSMExp {
                             taskWriter.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
+                            readStream.close();
+                            readZip.close();
+                            writeStream.close();
+                            writeZip.close();
                             connector.close();
                             System.exit(-1);
                         }
@@ -225,9 +259,13 @@ public class OSMExp {
                             (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                         break;
                 }
+                readStream.close();
+                readZip.close();
                 System.out.println("Generating " + config.getReadLogPath());
                 rw.sortMergeTmpFiles();
             }
+            writeStream.close();
+            writeZip.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -282,5 +320,11 @@ public class OSMExp {
             System.out.println("Failed to get " + config.getTaskName() + ".zip");
         System.out.println("Done");
         System.exit(0);
+    }
+
+    private static String getFileName(String zipFile) {
+        String[] parts = zipFile.replace("\\", "/").split("/");
+        String base = parts[parts.length - 1];
+        return base.substring(0, base.length() - 3) + "bin";
     }
 }

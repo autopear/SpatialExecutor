@@ -23,11 +23,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class ReadWorker extends IOWoker {
     private final String tmpReadLogPath;
+    private final byte[] readData;
 
     public ReadWorker(Configuration config, InputStream inStream, AtomicLong pkid, long startTime) {
         super(config, inStream, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
-
+        readData = new byte[Float.BYTES * 3 * (int)maxOps];
         if (startTime < 1)
             System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead());
         else
@@ -88,18 +89,27 @@ public class ReadWorker extends IOWoker {
 
     public Pair<Long, Long> execute() throws InterruptedException {
         reset();
+        try {
+            int l = inStream.read(readData);
+            if (l != readData.length)
+                return Pair.of(-1L, -1L);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Pair.of(-1L, -1L);
+        }
         long localStartTime = System.currentTimeMillis();
         if (config.getNumThreadsRead() == 1) {
-            ReadThread w = new ReadThread(0, maxOps);
+            ReadThread w = new ReadThread(0, maxOps, 0);
             w.task();
         } else {
             long batch = (long) Math.ceil((double) maxOps / config.getNumThreadsRead());
-
-            List<ReadThread> threads = new ArrayList<>();
-            for (int i = 0; i < config.getNumThreadsRead() - 1; i++)
-                threads.add(new ReadThread(i + 1, batch));
-            threads.add(new ReadThread(config.getNumThreadsRead(), maxOps - batch * (config.getNumThreadsRead() - 1)));
-
+            int tStartPos = 0;
+            ReadThread[] threads = new ReadThread[config.getNumThreadsRead()];
+            for (int i = 0; i < config.getNumThreadsRead() - 1; i++) {
+                threads[i] = new ReadThread(i + 1, batch, tStartPos);
+                tStartPos += batch * Float.BYTES * 3;
+            }
+            threads[threads.length - 1] = new ReadThread(config.getNumThreadsRead(), maxOps - batch * (config.getNumThreadsRead() - 1), tStartPos);
             for (ReadThread w : threads)
                 w.start();
             for (ReadThread w : threads)
@@ -112,10 +122,11 @@ public class ReadWorker extends IOWoker {
     protected class ReadThread extends IOThread {
         private final JSONParser parser;
         private BufferedWriter readLogWriter;
-        private final byte[] numBuf = new byte[Float.BYTES * 3];
+        private int tStartPos;
 
-        private ReadThread(int tid, long totoalOps) {
+        private ReadThread(int tid, long totoalOps, int tStartPos) {
             super(tid, totoalOps);
+            this.tStartPos = tStartPos;
             parser = new JSONParser();
         }
 
@@ -175,47 +186,43 @@ public class ReadWorker extends IOWoker {
             DBConnector connector = new DBConnector("http://" + config.getPrivateIP() + ":19002/query/service");
             List<String> results = new ArrayList<>();
             String sqlErr = "";
-            try {
-                for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                    inStream.read(numBuf);
-                    float exp = Utils.bytes2float(numBuf, 0, Float.BYTES);
-                    float x = Utils.bytes2float(numBuf, Float.BYTES, Float.BYTES);
-                    float y = Utils.bytes2float(numBuf, Float.BYTES * 2, Float.BYTES);
+            for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
+                float exp = Utils.bytes2float(readData, tStartPos, Float.BYTES);
+                float x = Utils.bytes2float(readData, tStartPos + Float.BYTES, Float.BYTES);
+                float y = Utils.bytes2float(readData, tStartPos + Float.BYTES * 2, Float.BYTES);
+                tStartPos += Float.BYTES * 3;
 
-                    double w = 360.0 / Math.pow(10, exp);
-                    double h = 180.0 / Math.pow(10, exp);
-                    Pair<Long, Long> res = parseResult(connector.execute(query(x, y, w, h), sqlErr));
-                    if (res.getLeft() >= 0 && res.getRight() > 0)
-                        results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
+                double w = 360.0 / Math.pow(10, exp);
+                double h = 180.0 / Math.pow(10, exp);
+                Pair<Long, Long> res = parseResult(connector.execute(query(x, y, w, h), sqlErr));
+                if (res.getLeft() >= 0 && res.getRight() > 0)
+                    results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
+                else
+                    Utils.print(sqlErr + "\n");
+                if (results.size() == 100) {
+                    writeLog(results);
+                    results.clear();
+                }
+                showProgress(false);
+                if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())
+                    break;
+                if (config.getSleepRead() > 0) {
+                    long sleepTime;
+                    if (startTime > 0 && config.getDuration() > 0)
+                        sleepTime = Math.min(config.getSleepRead(), config.getDuration() * 1000 + startTime - System.currentTimeMillis());
                     else
-                        Utils.print(sqlErr + "\n");
-                    if (results.size() == 100) {
-                        writeLog(results);
-                        results.clear();
+                        sleepTime = config.getSleepRead();
+                    try {
+                        sleep(sleepTime);
+                    } catch (InterruptedException e) {
+                        break;
                     }
-                    showProgress(false);
                     if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())
                         break;
-                    if (config.getSleepRead() > 0) {
-                        long sleepTime;
-                        if (startTime > 0 && config.getDuration() > 0)
-                            sleepTime = Math.min(config.getSleepRead(), config.getDuration() * 1000 + startTime - System.currentTimeMillis());
-                        else
-                            sleepTime = config.getSleepRead();
-                        try {
-                            sleep(sleepTime);
-                        } catch (InterruptedException e) {
-                            break;
-                        }
-                        if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())
-                            break;
-                    }
                 }
-                connector.close();
-                writeLog(results);
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+            connector.close();
+            writeLog(results);
             if (readLogWriter != null) {
                 try {
                     readLogWriter.close();

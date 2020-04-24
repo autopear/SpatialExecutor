@@ -19,8 +19,6 @@ import java.util.zip.ZipEntry;
 public class OSMExp {
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println(getFileName("assf/sdfsfsf.zip"));
-
         if (args.length != 3) {
             System.out.println("OSMExp TASK INIT_SCRIPT NODE");
             System.exit(0);

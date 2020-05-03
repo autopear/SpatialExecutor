@@ -29,6 +29,7 @@ public class ReadWorker extends IOWoker {
         super(config, inStream, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
         readData = new byte[Float.BYTES * 3 * (int)maxOps];
+        Utils.print("Buf len " + readData.length + "\n");
         if (startTime < 1)
             System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead());
         else
@@ -91,8 +92,9 @@ public class ReadWorker extends IOWoker {
         reset();
         try {
             int l = inStream.read(readData, 0, readData.length);
+            Utils.print("read " + l + "\n");
             if (l != readData.length) {
-                Utils.print("Read " + l + " bytes");
+                Utils.print("Read " + l + " bytes: " + readData.length);
                 return Pair.of(-1L, -1L);
             }
         } catch (IOException e) {

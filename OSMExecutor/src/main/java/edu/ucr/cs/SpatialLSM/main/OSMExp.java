@@ -212,14 +212,13 @@ public class OSMExp {
             if (taskSetting.compareTo("IR") == 0 || taskSetting.compareTo("LIR") == 0) {
                 ZipFile readZip = new ZipFile(readFile);
                 ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
-                Utils.print("ZipEntry " + readEntry.getName() + ": " + readEntry.getSize());
                 InputStream readStream = readZip.getInputStream(readEntry);
                 long startTime = System.currentTimeMillis();
                 InsertWorker iw = new InsertWorker(config, writeStream, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);
                 ReadWorker rw = new ReadWorker(config, readStream, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
                 rw.clearTmpFiles();
                 while (true) {
-                    if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
+                    /*if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
                         Pair<Long, Long> insertRes = iw.execute();
                         try {
                             taskWriter.write("I\t" + (++numInserts) + "\t" + insertRes.getLeft() + "\t" + insertRes.getRight() + "\n");
@@ -233,12 +232,13 @@ public class OSMExp {
                             connector.close();
                             System.exit(-1);
                         }
-                    }
+                    }*/
                     if ((config.getNumBatchInsert() > 0 && numInserts == config.getNumBatchInsert() &&
                             config.getNumBatchRead() > 0 && numReads == config.getNumBatchRead()) ||
                             (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                         break;
                     if (config.getNumBatchRead() < 1 || numReads < config.getNumBatchRead()) {
+                        Utils.print("Read task");
                         Pair<Long, Long> readRes = rw.execute();
                         try {
                             taskWriter.write("R\t" + (++numReads) + "\t" + readRes.getLeft() + "\t" + readRes.getRight() + "\n");

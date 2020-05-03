@@ -212,6 +212,7 @@ public class OSMExp {
             if (taskSetting.compareTo("IR") == 0 || taskSetting.compareTo("LIR") == 0) {
                 ZipFile readZip = new ZipFile(readFile);
                 ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
+                Utils.print("ZipEntry " + readEntry.getName() + ": " + readEntry.getSize());
                 InputStream readStream = readZip.getInputStream(readEntry);
                 long startTime = System.currentTimeMillis();
                 InsertWorker iw = new InsertWorker(config, writeStream, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);

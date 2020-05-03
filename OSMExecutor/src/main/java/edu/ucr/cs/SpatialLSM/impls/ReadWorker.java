@@ -90,9 +90,11 @@ public class ReadWorker extends IOWoker {
     public Pair<Long, Long> execute() throws InterruptedException {
         reset();
         try {
-            int l = inStream.read(readData);
-            if (l != readData.length)
+            int l = inStream.read(readData, 0, readData.length);
+            if (l != readData.length) {
+                Utils.print("Read " + l + " bytes");
                 return Pair.of(-1L, -1L);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return Pair.of(-1L, -1L);

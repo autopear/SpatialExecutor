@@ -218,7 +218,7 @@ public class OSMExp {
                 ReadWorker rw = new ReadWorker(config, readStream, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
                 rw.clearTmpFiles();
                 while (true) {
-                    /*if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
+                    if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
                         Pair<Long, Long> insertRes = iw.execute();
                         try {
                             taskWriter.write("I\t" + (++numInserts) + "\t" + insertRes.getLeft() + "\t" + insertRes.getRight() + "\n");
@@ -232,7 +232,7 @@ public class OSMExp {
                             connector.close();
                             System.exit(-1);
                         }
-                    }*/
+                    }
                     if ((config.getNumBatchInsert() > 0 && numInserts == config.getNumBatchInsert() &&
                             config.getNumBatchRead() > 0 && numReads == config.getNumBatchRead()) ||
                             (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))

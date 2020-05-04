@@ -194,17 +194,9 @@ public class ReadWorker extends IOWoker {
                 float x = Utils.bytes2float(readData, tStartPos + Float.BYTES, Float.BYTES);
                 float y = Utils.bytes2float(readData, tStartPos + Float.BYTES * 2, Float.BYTES);
                 tStartPos += Float.BYTES * 3;
-
                 double w = 360.0 / Math.pow(10, exp);
                 double h = 180.0 / Math.pow(10, exp);
                 String q = query(x, y, w, h);
-                try {
-                    readLogWriter.write(q);
-                    readLogWriter.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
                 Pair<Long, Long> res = parseResult(connector.execute(q, sqlErr));
                 if (res.getLeft() >= 0 && res.getRight() > 0)
                     results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");

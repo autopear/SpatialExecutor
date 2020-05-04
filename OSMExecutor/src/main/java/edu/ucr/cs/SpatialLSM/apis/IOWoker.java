@@ -4,12 +4,12 @@ import edu.ucr.cs.SpatialLSM.common.Configuration;
 import edu.ucr.cs.SpatialLSM.common.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.BufferedReader;
 import java.util.concurrent.atomic.AtomicLong;
-import java.io.InputStream;
 
 public abstract class IOWoker extends Thread {
     protected final Configuration config;
-    protected final InputStream inStream;
+    protected final BufferedReader reader;
     protected final AtomicLong pkid;
     protected final long maxOps;
     protected final long startTime;
@@ -18,9 +18,9 @@ public abstract class IOWoker extends Thread {
     private final String logPrefix;
     private Pair<Long, Long> result;
 
-    protected IOWoker(Configuration config, InputStream inStream, AtomicLong pkid, long maxOps, long startTime, String logPrefix) {
+    protected IOWoker(Configuration config, BufferedReader reader, AtomicLong pkid, long maxOps, long startTime, String logPrefix) {
         this.config = config;
-        this.inStream = inStream;
+        this.reader = reader;
         this.pkid = pkid;
         this.maxOps = maxOps;
         this.startTime = startTime;

@@ -11,38 +11,28 @@ import edu.ucr.cs.SpatialLSM.apis.IOWoker;
 import edu.ucr.cs.SpatialLSM.apis.IOThread;
 import edu.ucr.cs.SpatialLSM.common.DBConnector;
 
-import javax.rmi.CORBA.Util;
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.File;
-import java.io.FilenameFilter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ReadWorker extends IOWoker {
     private final String tmpReadLogPath;
-    private final byte[] readData;
-    private int readStart;
+    private final float[] exps;
+    private final float[] xs;
+    private final float[] ys;
 
-    public ReadWorker(Configuration config, InputStream inStream, AtomicLong pkid, long startTime) throws IOException {
-        super(config, inStream, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
+    public ReadWorker(Configuration config, BufferedReader reader, AtomicLong pkid, long startTime) {
+        super(config, reader, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
-        long totalReads = config.getNumBatchRead() * config.getBatchSizeRead();
-        readData = new byte[Float.BYTES * 3 * (int)totalReads];
-        readStart = 0;
+        exps = new float[(int)maxOps];
+        xs = new float[(int)maxOps];
+        ys = new float[(int)maxOps];
         if (startTime < 1)
             System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead());
         else
             System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead());
-        int bytesRead = 0;
-        int totalRead = 0;
-        while ((bytesRead = inStream.read(readData, totalRead, readData.length - totalRead)) != -1) {
-            totalRead += bytesRead;
-        }
-        System.out.println("Read file size: " + totalRead);
     }
 
     public int clearTmpFiles() {
@@ -99,33 +89,44 @@ public class ReadWorker extends IOWoker {
 
     public Pair<Long, Long> execute() throws InterruptedException {
         reset();
+        try {
+            for (int i = 0; i < config.getBatchSizeRead(); i++) {
+                String line = reader.readLine().replace("\n", "");
+                String[] nums = line.split("\t");
+                exps[i] = Float.parseFloat(nums[0]);
+                xs[i] = Float.parseFloat(nums[1]);
+                ys[i] = Float.parseFloat(nums[2]);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Pair.of(-1L, -1L);
+        }
         long localStartTime = System.currentTimeMillis();
         if (config.getNumThreadsRead() == 1) {
             ReadThread w = new ReadThread(0, maxOps, 0);
             w.task();
         } else {
             long batch = (long) Math.ceil((double) maxOps / config.getNumThreadsRead());
-            int tStartPos = readStart;
             ReadThread[] threads = new ReadThread[config.getNumThreadsRead()];
-            for (int i = 0; i < config.getNumThreadsRead() - 1; i++) {
-                threads[i] = new ReadThread(i + 1, batch, tStartPos);
-                tStartPos += batch * Float.BYTES * 3;
+            int r = ThreadLocalRandom.current().nextInt(0, config.getNumThreadsRead());
+            int startPos = 0;
+            for (int i = 0; i < config.getNumThreadsRead(); i++) {
+                int size = (int) (i == r ? maxOps - batch * (config.getNumThreadsRead() - 1) : batch);
+                threads[i] = new ReadThread(i + 1, size, startPos);
+                startPos += size;
             }
-            threads[threads.length - 1] = new ReadThread(config.getNumThreadsRead(), maxOps - batch * (config.getNumThreadsRead() - 1), tStartPos);
             for (ReadThread w : threads)
                 w.start();
             for (ReadThread w : threads)
                 w.join();
         }
-        readStart += Float.BYTES * 3 * (int)maxOps;
-        Pair<Long, Long> ret = Pair.of(showProgress(true), System.currentTimeMillis() - localStartTime);
-        return ret;
+        return Pair.of(showProgress(true), System.currentTimeMillis() - localStartTime);
     }
 
     protected class ReadThread extends IOThread {
         private final JSONParser parser;
         private BufferedWriter readLogWriter;
-        private int tStartPos;
+        private final int tStartPos;
 
         private ReadThread(int tid, long totoalOps, int tStartPos) {
             super(tid, totoalOps);
@@ -190,10 +191,9 @@ public class ReadWorker extends IOWoker {
             List<String> results = new ArrayList<>();
             String sqlErr = "";
             for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                float exp = Utils.bytes2float(readData, tStartPos, Float.BYTES);
-                float x = Utils.bytes2float(readData, tStartPos + Float.BYTES, Float.BYTES);
-                float y = Utils.bytes2float(readData, tStartPos + Float.BYTES * 2, Float.BYTES);
-                tStartPos += Float.BYTES * 3;
+                float exp = exps[tStartPos + (int)performedOps];
+                float x = xs[tStartPos + (int)performedOps];
+                float y = ys[tStartPos + (int)performedOps];
                 double w = 360.0 / Math.pow(10, exp);
                 double h = 180.0 / Math.pow(10, exp);
                 String q = query(x, y, w, h);

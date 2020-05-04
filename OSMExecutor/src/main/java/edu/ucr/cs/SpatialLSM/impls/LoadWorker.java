@@ -4,19 +4,19 @@ import edu.ucr.cs.SpatialLSM.common.Configuration;
 import edu.ucr.cs.SpatialLSM.common.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicLong;
-import java.io.InputStream;
 
 import edu.ucr.cs.SpatialLSM.apis.IOThread;
 import edu.ucr.cs.SpatialLSM.apis.IOWoker;
 
 public class LoadWorker extends IOWoker {
 
-    public LoadWorker(Configuration config, InputStream inStream, AtomicLong pkid, long startTime) {
-        super(config, inStream, pkid, config.getSizeLoad(), startTime, "Load:   ");
+    public LoadWorker(Configuration config, BufferedReader reader, AtomicLong pkid, long startTime) {
+        super(config, reader, pkid, config.getSizeLoad(), startTime, "Load:   ");
         if (startTime < 1)
             System.out.println("Load: size = " + maxOps + ", sleep = " + config.getSleepLoad());
         else
@@ -33,8 +33,6 @@ public class LoadWorker extends IOWoker {
 
     private class LoadThreadWorker extends IOThread {
 
-        private final byte[] numBuf = new byte[Float.BYTES * 2];
-
         private LoadThreadWorker(int tid, long totoalOps) {
             super(tid, totoalOps);
         }
@@ -46,9 +44,10 @@ public class LoadWorker extends IOWoker {
                 sock.setKeepAlive(true);
                 PrintWriter feedWriter = new PrintWriter(sock.getOutputStream());
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                    inStream.read(numBuf);
-                    float lon = Utils.bytes2float(numBuf, 0, Float.BYTES);
-                    float lat = Utils.bytes2float(numBuf, Float.BYTES, Float.BYTES);
+                    String line = reader.readLine();
+                    String[] nums = line.replace("\n", "").split("\t");
+                    float lon = Float.parseFloat(nums[0]);
+                    float lat = Float.parseFloat(nums[1]);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
                     if (getTotoalOps() < 1 && startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())

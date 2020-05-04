@@ -9,12 +9,12 @@ import edu.ucr.cs.SpatialLSM.impls.ReadWorker;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipEntry;
+import java.util.zip.GZIPInputStream;
 
 public class OSMExp {
 
@@ -101,9 +101,10 @@ public class OSMExp {
         }
 
         try {
-            ZipFile writeZip = new ZipFile(writeFile);
-            ZipEntry writeEntry = writeZip.getEntry(getFileName(config.getWriteDataPath()));
-            InputStream writeStream = writeZip.getInputStream(writeEntry);
+            FileInputStream writeFileStream = new FileInputStream(writeFile);
+            GZIPInputStream writeStream = new GZIPInputStream(writeFileStream);
+            InputStreamReader writeInReader = new InputStreamReader(writeStream, StandardCharsets.US_ASCII);
+            BufferedReader writeReader = new BufferedReader(writeInReader);
 
             // Has a pre load phase
             if (taskSetting.startsWith("L")) {
@@ -114,15 +115,17 @@ public class OSMExp {
                     connector.close();
                     System.exit(-1);
                 }
-                LoadWorker lw = new LoadWorker(config, writeStream, pkid, maxOps < 1 ? System.currentTimeMillis() : -1);
+                LoadWorker lw = new LoadWorker(config, writeReader, pkid, maxOps < 1 ? System.currentTimeMillis() : -1);
                 Pair<Long, Long> loadRes = lw.execute();
                 try {
                     taskWriter.write("L\t0\t" + loadRes.getLeft() + "\t" + loadRes.getRight() + "\n");
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    writeReader.close();
+                    writeInReader.close();
                     writeStream.close();
-                    writeZip.close();
+                    writeFileStream.close();
                     connector.close();
                     System.exit(-1);
                 }
@@ -141,12 +144,13 @@ public class OSMExp {
                     connector.close();
                     System.exit(-1);
                 }
-                ZipFile readZip = new ZipFile(readFile);
-                ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
-                InputStream readStream = readZip.getInputStream(readEntry);
+                FileInputStream readFileStream = new FileInputStream(readFile);
+                GZIPInputStream readStream = new GZIPInputStream(readFileStream);
+                InputStreamReader readInReader = new InputStreamReader(readStream, StandardCharsets.US_ASCII);
+                BufferedReader readReader = new BufferedReader(readInReader);
                 long startTime = System.currentTimeMillis();
-                InsertWorker iw = new InsertWorker(config, writeStream, pkid, startTime);
-                ReadWorker rw = new ReadWorker(config, readStream, pkid, startTime);
+                InsertWorker iw = new InsertWorker(config, writeReader, pkid, startTime);
+                ReadWorker rw = new ReadWorker(config, readReader, pkid, startTime);
                 rw.clearTmpFiles();
                 iw.start();
                 rw.start();
@@ -162,15 +166,21 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    readReader.close();
+                    readInReader.close();
                     readStream.close();
-                    readZip.close();
+                    readFileStream.close();
+                    writeReader.close();
+                    writeInReader.close();
                     writeStream.close();
-                    writeZip.close();
+                    writeFileStream.close();
                     connector.close();
                     System.exit(-1);
                 }
+                readReader.close();
+                readInReader.close();
                 readStream.close();
-                readZip.close();
+                readFileStream.close();
             }
 
             // Pure reads
@@ -182,11 +192,12 @@ public class OSMExp {
                     connector.close();
                     System.exit(-1);
                 }
-                ZipFile readZip = new ZipFile(readFile);
-                ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
-                InputStream readStream = readZip.getInputStream(readEntry);
+                FileInputStream readFileStream = new FileInputStream(readFile);
+                GZIPInputStream readStream = new GZIPInputStream(readFileStream);
+                InputStreamReader readInReader = new InputStreamReader(readStream, StandardCharsets.US_ASCII);
+                BufferedReader readReader = new BufferedReader(readInReader);
                 long startTime = System.currentTimeMillis();
-                ReadWorker rw = new ReadWorker(config, readStream, pkid, maxOps < 1 ? startTime : -1);
+                ReadWorker rw = new ReadWorker(config, readReader, pkid, maxOps < 1 ? startTime : -1);
                 rw.clearTmpFiles();
                 Pair<Long, Long> readRes = rw.execute();
                 System.out.println("Generating " + config.getReadLogPath());
@@ -196,26 +207,33 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    readReader.close();
+                    readInReader.close();
                     readStream.close();
-                    readZip.close();
+                    readFileStream.close();
+                    writeReader.close();
+                    writeInReader.close();
                     writeStream.close();
-                    writeZip.close();
+                    writeFileStream.close();
                     connector.close();
                     System.exit(-1);
                 }
                 System.out.println("Elapsed " + Utils.durationToString(Math.round((double)(System.currentTimeMillis() - startTime) / 1000)));
+                readReader.close();
+                readInReader.close();
                 readStream.close();
-                readZip.close();
+                readFileStream.close();
             }
 
             // Interleaved of inserts / reads
             if (taskSetting.compareTo("IR") == 0 || taskSetting.compareTo("LIR") == 0) {
-                ZipFile readZip = new ZipFile(readFile);
-                ZipEntry readEntry = readZip.getEntry(getFileName(config.getReadDataPath()));
-                InputStream readStream = readZip.getInputStream(readEntry);
+                FileInputStream readFileStream = new FileInputStream(readFile);
+                GZIPInputStream readStream = new GZIPInputStream(readFileStream);
+                InputStreamReader readInReader = new InputStreamReader(readStream, StandardCharsets.US_ASCII);
+                BufferedReader readReader = new BufferedReader(readInReader);
                 long startTime = System.currentTimeMillis();
-                InsertWorker iw = new InsertWorker(config, writeStream, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);
-                ReadWorker rw = new ReadWorker(config, readStream, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
+                InsertWorker iw = new InsertWorker(config, writeReader, pkid, config.getNumBatchInsert() < 1 ? startTime : -1);
+                ReadWorker rw = new ReadWorker(config, readReader, pkid, config.getNumBatchRead() < 1 ? startTime : -1);
                 rw.clearTmpFiles();
                 while (true) {
                     if (config.getNumBatchInsert() < 1 || numInserts < config.getNumBatchInsert()) {
@@ -225,10 +243,14 @@ public class OSMExp {
                             taskWriter.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
+                            readReader.close();
+                            readInReader.close();
                             readStream.close();
-                            readZip.close();
+                            readFileStream.close();
+                            writeReader.close();
+                            writeInReader.close();
                             writeStream.close();
-                            writeZip.close();
+                            writeFileStream.close();
                             connector.close();
                             System.exit(-1);
                         }
@@ -244,10 +266,14 @@ public class OSMExp {
                             taskWriter.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
+                            readReader.close();
+                            readInReader.close();
                             readStream.close();
-                            readZip.close();
+                            readFileStream.close();
+                            writeReader.close();
+                            writeInReader.close();
                             writeStream.close();
-                            writeZip.close();
+                            readFileStream.close();
                             connector.close();
                             System.exit(-1);
                         }
@@ -257,13 +283,17 @@ public class OSMExp {
                             (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                         break;
                 }
+                readReader.close();
+                readInReader.close();
                 readStream.close();
-                readZip.close();
+                readFileStream.close();
                 System.out.println("Generating " + config.getReadLogPath());
                 rw.sortMergeTmpFiles();
             }
+            writeReader.close();
+            writeInReader.close();
             writeStream.close();
-            writeZip.close();
+            writeFileStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

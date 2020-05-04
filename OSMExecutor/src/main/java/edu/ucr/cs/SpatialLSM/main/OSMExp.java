@@ -238,7 +238,6 @@ public class OSMExp {
                             (config.getDuration() > 0 && System.currentTimeMillis() - startTime >= config.getDuration()))
                         break;
                     if (config.getNumBatchRead() < 1 || numReads < config.getNumBatchRead()) {
-                        Utils.print("Read task");
                         Pair<Long, Long> readRes = rw.execute();
                         try {
                             taskWriter.write("R\t" + (++numReads) + "\t" + readRes.getLeft() + "\t" + readRes.getRight() + "\n");

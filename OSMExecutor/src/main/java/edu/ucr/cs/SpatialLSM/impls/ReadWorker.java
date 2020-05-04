@@ -39,7 +39,7 @@ public class ReadWorker extends IOWoker {
             System.out.println("Read: duration = " + config.getDuration() + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead());
         int bytesRead = 0;
         int totalRead = 0;
-        while ((bytesRead = inStream.read(readData)) != -1) {
+        while ((bytesRead = inStream.read(readData, totalRead, readData.length - totalRead)) != -1) {
             totalRead += bytesRead;
         }
         System.out.println("Read file size: " + totalRead);

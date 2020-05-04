@@ -109,7 +109,6 @@ public class ReadWorker extends IOWoker {
             ReadThread[] threads = new ReadThread[config.getNumThreadsRead()];
             for (int i = 0; i < config.getNumThreadsRead() - 1; i++) {
                 threads[i] = new ReadThread(i + 1, batch, tStartPos);
-                System.out.println("Thread " + i + " start " + tStartPos);
                 tStartPos += batch * Float.BYTES * 3;
             }
             threads[threads.length - 1] = new ReadThread(config.getNumThreadsRead(), maxOps - batch * (config.getNumThreadsRead() - 1), tStartPos);
@@ -198,7 +197,15 @@ public class ReadWorker extends IOWoker {
 
                 double w = 360.0 / Math.pow(10, exp);
                 double h = 180.0 / Math.pow(10, exp);
-                Pair<Long, Long> res = parseResult(connector.execute(query(x, y, w, h), sqlErr));
+                String q = query(x, y, w, h);
+                try {
+                    readLogWriter.write(q);
+                    readLogWriter.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                Pair<Long, Long> res = parseResult(connector.execute(q, sqlErr));
                 if (res.getLeft() >= 0 && res.getRight() > 0)
                     results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
                 else

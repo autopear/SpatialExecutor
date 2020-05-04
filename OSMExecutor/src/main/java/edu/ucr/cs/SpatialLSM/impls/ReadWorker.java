@@ -42,7 +42,7 @@ public class ReadWorker extends IOWoker {
         while ((bytesRead = inStream.read(readData)) != -1) {
             totalRead += bytesRead;
         }
-        Utils.print("Read file size: " + totalRead + "\n");
+        System.out.println("Read file size: " + totalRead);
     }
 
     public int clearTmpFiles() {
@@ -109,6 +109,7 @@ public class ReadWorker extends IOWoker {
             ReadThread[] threads = new ReadThread[config.getNumThreadsRead()];
             for (int i = 0; i < config.getNumThreadsRead() - 1; i++) {
                 threads[i] = new ReadThread(i + 1, batch, tStartPos);
+                System.out.println("Thread " + i + " start " + tStartPos);
                 tStartPos += batch * Float.BYTES * 3;
             }
             threads[threads.length - 1] = new ReadThread(config.getNumThreadsRead(), maxOps - batch * (config.getNumThreadsRead() - 1), tStartPos);

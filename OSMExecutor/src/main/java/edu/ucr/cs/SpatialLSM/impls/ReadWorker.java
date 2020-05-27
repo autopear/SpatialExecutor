@@ -1,6 +1,7 @@
 package edu.ucr.cs.SpatialLSM.impls;
 
 import edu.ucr.cs.SpatialLSM.common.Configuration;
+import edu.ucr.cs.SpatialLSM.common.ThroughputLogger;
 import edu.ucr.cs.SpatialLSM.common.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
@@ -198,9 +199,10 @@ public class ReadWorker extends IOWoker {
                 double h = 180.0 / Math.pow(10, exp);
                 String q = query(x, y, x + w, y + h);
                 Pair<Long, Long> res = parseResult(connector.execute(q, sqlErr));
-                if (res.getLeft() >= 0 && res.getRight() > 0)
+                if (res.getLeft() >= 0 && res.getRight() > 0) {
                     results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");
-                else
+                    ThroughputLogger.updateStats(0, 1);
+                } else
                     Utils.print(sqlErr + "\n");
                 if (results.size() == 100) {
                     writeLog(results);

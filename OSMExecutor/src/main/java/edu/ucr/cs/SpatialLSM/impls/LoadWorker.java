@@ -1,6 +1,7 @@
 package edu.ucr.cs.SpatialLSM.impls;
 
 import edu.ucr.cs.SpatialLSM.common.Configuration;
+import edu.ucr.cs.SpatialLSM.common.ThroughputLogger;
 import edu.ucr.cs.SpatialLSM.common.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -50,6 +51,7 @@ public class LoadWorker extends IOWoker {
                     double lat = Double.parseDouble(nums[1]);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
+                    ThroughputLogger.updateStats(1, 0);
                     if (getTotoalOps() < 1 && startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())
                         break;
                     if (config.getSleepLoad() > 0) {

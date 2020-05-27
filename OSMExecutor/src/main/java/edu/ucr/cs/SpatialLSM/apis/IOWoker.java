@@ -13,7 +13,7 @@ public abstract class IOWoker extends Thread {
     protected final AtomicLong pkid;
     protected final long maxOps;
     protected final long startTime;
-    private final AtomicLong ops;
+    private long ops;
     private long percent;
     private final String logPrefix;
     private Pair<Long, Long> result;
@@ -24,7 +24,7 @@ public abstract class IOWoker extends Thread {
         this.pkid = pkid;
         this.maxOps = maxOps;
         this.startTime = startTime;
-        ops = new AtomicLong(0);
+        ops = 0;
         this.logPrefix = logPrefix;
         result = Pair.of(-1L, -1L);
     }
@@ -46,12 +46,12 @@ public abstract class IOWoker extends Thread {
 
     protected void reset() {
         percent = 0;
-        ops.set(0);
+        ops = 0;
     }
 
     protected synchronized long showProgress(boolean isFinal) {
         if (isFinal) {
-            long numOps = ops.get();
+            long numOps = ops;
             if (maxOps < 1)
                 Utils.print(logPrefix + Utils.num2str(numOps) + ", elapsed " + Utils.durationToString(Math.round((double) (System.currentTimeMillis() - startTime) / 1000)) + "\n");
             else if (startTime > 0)
@@ -60,7 +60,7 @@ public abstract class IOWoker extends Thread {
                 Utils.print(logPrefix + Utils.num2str(numOps) + " / " + Utils.num2str(maxOps) + " (" + ((double)percent / 10) + "%)\n");
             return numOps;
         } else {
-            long numOps = ops.incrementAndGet();
+            long numOps = ++ops;
             if (maxOps < 1) {
                 long np = Math.round((double) (System.currentTimeMillis() - startTime) / 1000);
                 if (np - percent >= 10) {

@@ -2,6 +2,7 @@ package edu.ucr.cs.SpatialLSM.main;
 
 import edu.ucr.cs.SpatialLSM.common.Configuration;
 import edu.ucr.cs.SpatialLSM.common.DBConnector;
+import edu.ucr.cs.SpatialLSM.common.ThroughputLogger;
 import edu.ucr.cs.SpatialLSM.common.Utils;
 import edu.ucr.cs.SpatialLSM.impls.InsertWorker;
 import edu.ucr.cs.SpatialLSM.impls.LoadWorker;
@@ -105,6 +106,8 @@ public class OSMExp {
             GZIPInputStream writeStream = new GZIPInputStream(writeFileStream);
             InputStreamReader writeInReader = new InputStreamReader(writeStream, StandardCharsets.US_ASCII);
             BufferedReader writeReader = new BufferedReader(writeInReader);
+
+            ThroughputLogger.updateStats(0, 0);
 
             // Has a pre load phase
             if (taskSetting.startsWith("L")) {
@@ -335,7 +338,8 @@ public class OSMExp {
         if (new File(zipPath).exists()) {
             String[] files = {
                     Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".task.log"),
-                    Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".read.tsv")
+                    Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".read.tsv"),
+                    ThroughputLogger.logFilePath()
             };
             for (String f : files) {
                 File file = new File(f);

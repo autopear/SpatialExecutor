@@ -100,27 +100,23 @@ public class Utils {
         return d + " d" + tStr; // w d[ z h][ y m][ x s]
     }
 
-    public static byte [] float2bytes(float number) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Float.BYTES);
+    public static byte [] double2bytes(double number) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
         byteBuffer.order(ByteOrder.BIG_ENDIAN);
-        byteBuffer.putFloat(number);
+        byteBuffer.putDouble(number);
         return byteBuffer.array();
     }
 
-    public static float bytes2float(byte[] bs){
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Float.BYTES);
-        byteBuffer.order(ByteOrder.BIG_ENDIAN);
-        byteBuffer.put(bs);
-        byteBuffer.flip();
-        return byteBuffer.getFloat();
+    public static double bytes2double(byte[] bs){
+        return bytes2double(bs, 0, bs.length);
     }
 
-    public static float bytes2float(byte[] bs, int s, int l){
+    public static double bytes2double(byte[] bs, int s, int l){
         ByteBuffer byteBuffer = ByteBuffer.allocate(Float.BYTES);
         byteBuffer.order(ByteOrder.BIG_ENDIAN);
         byteBuffer.put(bs, s, l);
         byteBuffer.flip();
-        return byteBuffer.getFloat();
+        return byteBuffer.getDouble();
     }
 
 }

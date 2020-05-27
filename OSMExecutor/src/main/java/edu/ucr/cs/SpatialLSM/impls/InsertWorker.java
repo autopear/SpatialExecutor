@@ -47,8 +47,8 @@ public class InsertWorker extends IOWoker {
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
                     String line = reader.readLine();
                     String[] nums = line.replace("\n", "").split("\t");
-                    float lon = Float.parseFloat(nums[0]);
-                    float lat = Float.parseFloat(nums[1]);
+                    double lon = Double.parseDouble(nums[0]);
+                    double lat = Double.parseDouble(nums[1]);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
                     if (startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())

@@ -19,16 +19,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class ReadWorker extends IOWoker {
     private final String tmpReadLogPath;
-    private final float[] exps;
-    private final float[] xs;
-    private final float[] ys;
+    private final double[] exps;
+    private final double[] xs;
+    private final double[] ys;
 
     public ReadWorker(Configuration config, BufferedReader reader, AtomicLong pkid, long startTime) {
         super(config, reader, pkid, config.getBatchSizeRead(), startTime, "Read:   ");
         tmpReadLogPath = config.getReadLogPath() + ".tmp";
-        exps = new float[(int)maxOps];
-        xs = new float[(int)maxOps];
-        ys = new float[(int)maxOps];
+        exps = new double[(int)maxOps];
+        xs = new double[(int)maxOps];
+        ys = new double[(int)maxOps];
         if (startTime < 1)
             System.out.println("Read: size = " + maxOps + ", threads = " + config.getNumThreadsRead() + ", sleep = " + config.getSleepRead());
         else
@@ -93,9 +93,9 @@ public class ReadWorker extends IOWoker {
             for (int i = 0; i < config.getBatchSizeRead(); i++) {
                 String line = reader.readLine().replace("\n", "");
                 String[] nums = line.split("\t");
-                exps[i] = Float.parseFloat(nums[0]);
-                xs[i] = Float.parseFloat(nums[1]);
-                ys[i] = Float.parseFloat(nums[2]);
+                exps[i] = Double.parseDouble(nums[0]);
+                xs[i] = Double.parseDouble(nums[1]);
+                ys[i] = Double.parseDouble(nums[2]);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -134,10 +134,10 @@ public class ReadWorker extends IOWoker {
             parser = new JSONParser();
         }
 
-        private String query(float x, float y, double w, double h) {
+        private String query(double x0, double y0, double x1, double y1) {
             return "USE Level_Spatial;" +
                     "SELECT COUNT(*) AS cnt FROM Spatial_Table WHERE SPATIAL_INTERSECT(geo, rectangle(\"" +
-                    x + "," + y + " " + (x + w) + "," + (y + h) + "\"));";
+                    x0 + "," + y0 + " " + x1 + "," + y1 + "\"));";
         }
 
         private Pair<Long, Long> parseResult(String result) {
@@ -191,12 +191,12 @@ public class ReadWorker extends IOWoker {
             List<String> results = new ArrayList<>();
             String sqlErr = "";
             for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
-                float exp = exps[tStartPos + (int)performedOps];
-                float x = xs[tStartPos + (int)performedOps];
-                float y = ys[tStartPos + (int)performedOps];
+                double exp = exps[tStartPos + (int)performedOps];
+                double x = xs[tStartPos + (int)performedOps];
+                double y = ys[tStartPos + (int)performedOps];
                 double w = 360.0 / Math.pow(10, exp);
                 double h = 180.0 / Math.pow(10, exp);
-                String q = query(x, y, w, h);
+                String q = query(x, y, x + w, y + h);
                 Pair<Long, Long> res = parseResult(connector.execute(q, sqlErr));
                 if (res.getLeft() >= 0 && res.getRight() > 0)
                     results.add(pkid.get() + "\t" + exp + "\t" + x + "\t" + y + "\t" + res.getLeft() + "\t" + res.getRight() + "\n");

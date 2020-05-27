@@ -38,8 +38,6 @@ public class Configuration {
     private long loadSleep = -1;
     private long insertSleep = -1;
     private long readSleep = -1;
-    private String tLogPath;
-    private int tInterval;
 
     public Configuration(final String configPath) {
         JSONParser parser = new JSONParser();
@@ -133,8 +131,8 @@ public class Configuration {
                 writeDataPath = Utils.formatPath(jsonObject.get("write_data").toString());
             if (jsonObject.containsKey("read_data"))
                 readDataPath = Utils.formatPath(jsonObject.get("read_data").toString());
-            if (jsonObject.containsKey("tLogPath") && jsonObject.containsKey("tInterval"))
-                ThroughputLogger.createLogger(Utils.formatPath(jsonObject.get("tLogPath").toString()),
+            if (jsonObject.containsKey("tLogFile") && jsonObject.containsKey("tInterval"))
+                ThroughputLogger.createLogger(Utils.formatPath(logsDir + "/" + jsonObject.get("tLogFile").toString()),
                         Integer.parseInt(jsonObject.get("tInterval").toString()));
             configReader.close();
             configIsValid = true;

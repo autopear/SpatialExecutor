@@ -336,16 +336,18 @@ public class OSMExp {
 
         String zipPath = Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".zip");
         if (new File(zipPath).exists()) {
-            String[] files = {
+            String[] files =  {
                     Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".task.log"),
                     Utils.formatPath(config.getLogsDir() + "/" + config.getTaskName() + ".read.tsv"),
-                    ThroughputLogger.logFilePath()
+                    config.getTInterval() > 0 ? ThroughputLogger.logFilePath() : ""
             };
             for (String f : files) {
-                File file = new File(f);
-                if (file.exists()) {
-                    Utils.runCommand("zip -ju " + zipPath + " " + f);
-                    file.delete();
+                if (!f.isEmpty()) {
+                    File file = new File(f);
+                    if (file.exists()) {
+                        Utils.runCommand("zip -ju " + zipPath + " " + f);
+                        file.delete();
+                    }
                 }
             }
         } else

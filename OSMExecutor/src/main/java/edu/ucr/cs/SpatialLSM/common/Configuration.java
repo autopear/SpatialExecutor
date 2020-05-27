@@ -38,6 +38,7 @@ public class Configuration {
     private long loadSleep = -1;
     private long insertSleep = -1;
     private long readSleep = -1;
+    private int tInterval = -1;
 
     public Configuration(final String configPath) {
         JSONParser parser = new JSONParser();
@@ -92,6 +93,8 @@ public class Configuration {
                     writeDataPath = Utils.formatPath(commonObject.get("write_data").toString());
                 if (commonObject.containsKey("read_data"))
                     readDataPath = Utils.formatPath(commonObject.get("read_data").toString());
+                if (commonObject.containsKey("t_interval"))
+                    tInterval = Integer.parseInt(commonObject.get("t_interval").toString());
                 commonReader.close();
             }
             if (jsonObject.containsKey("feed_port"))
@@ -131,9 +134,10 @@ public class Configuration {
                 writeDataPath = Utils.formatPath(jsonObject.get("write_data").toString());
             if (jsonObject.containsKey("read_data"))
                 readDataPath = Utils.formatPath(jsonObject.get("read_data").toString());
-            if (jsonObject.containsKey("tLogFile") && jsonObject.containsKey("tInterval"))
-                ThroughputLogger.createLogger(Utils.formatPath(logsDir + "/" + jsonObject.get("tLogFile").toString()),
-                        Integer.parseInt(jsonObject.get("tInterval").toString()));
+            if (jsonObject.containsKey("t_interval"))
+                tInterval = Integer.parseInt(jsonObject.get("t_interval").toString());
+            if (tInterval > 0)
+                ThroughputLogger.createLogger(Utils.formatPath(logsDir + "/" + taskName + ".iops.tsv"), tInterval);
             configReader.close();
             configIsValid = true;
         } catch (IOException | ParseException e) {
@@ -249,6 +253,10 @@ public class Configuration {
 
     public String getReadDataPath() {
         return readDataPath;
+    }
+
+    public int getTInterval() {
+        return tInterval;
     }
 
     public String newRecord(AtomicLong pkid, double lon, double lat) {

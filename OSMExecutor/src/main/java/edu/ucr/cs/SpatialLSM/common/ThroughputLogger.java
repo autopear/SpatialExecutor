@@ -41,22 +41,23 @@ public class ThroughputLogger {
     }
 
     private synchronized void update(long newWrites, long newReads) {
+        boolean isInit = false;
         if (startTime == 0) {
             startTime = System.nanoTime();
             lastTime = startTime;
-            return;
+            isInit = true;
         }
-        if (newWrites > 0 || newReads > 0) {
+        if (isInit || newWrites > 0 || newReads > 0) {
             if (newWrites > 0)
                 numWrites += newWrites;
             if (newReads > 0)
                 numReads += newReads;
-            long duration = System.nanoTime() - lastTime;
-            lastTime += duration;
-            if (duration >= interval * 1000000000) {
+            long currentTime = System.nanoTime();
+            if (isInit || currentTime - lastTime >= interval * 1000000000) {
+                lastTime = currentTime;
                 try {
                     FileWriter fw = new FileWriter(logPath, true);
-                    fw.write(duration + "\t" + numWrites + "\t" + numReads + "\n");
+                    fw.write(lastTime + "\t" + numWrites + "\t" + numReads + "\n");
                     fw.close();
                 } catch (IOException ex) {
                     ex.printStackTrace();

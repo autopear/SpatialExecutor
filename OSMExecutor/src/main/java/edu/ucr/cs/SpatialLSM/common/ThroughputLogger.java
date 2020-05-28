@@ -11,17 +11,11 @@ public class ThroughputLogger {
     private long numWrites;
     private long numReads;
     private long startTime;
-    private long lastTime;
     private final FileWriter fw;
 
     public static synchronized void updateStats(long newWrites, long newReads) {
-        if (logger != null) {
-            try {
-                logger.update(newWrites, newReads);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
+        if (logger != null)
+            logger.update(newWrites, newReads);
     }
 
     public static void createLogger(String logPath, int interval) {
@@ -38,9 +32,24 @@ public class ThroughputLogger {
         return logger == null ? "" : logger.getLogFilePath();
     }
 
-    public static void close() throws IOException {
-        if (logger != null)
-            logger.closeWriter();
+    public static void flush() {
+        if (logger != null) {
+            try {
+                logger.flushFile();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static void close() {
+        if (logger != null) {
+            try {
+                logger.closeWriter();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     public ThroughputLogger(String logPath, int interval) throws IOException {
@@ -49,7 +58,6 @@ public class ThroughputLogger {
         numWrites = 0;
         numReads = 0;
         startTime = 0;
-        lastTime = 0;
         fw = new FileWriter(logPath, false);
     }
 
@@ -62,24 +70,18 @@ public class ThroughputLogger {
         fw.close();
     }
 
-    private void update(long newWrites, long newReads) throws IOException {
-        boolean isInit = false;
+    private void update(long newWrites, long newReads) {
         if (startTime == 0) {
             startTime = System.nanoTime();
-            lastTime = startTime;
-            isInit = true;
         }
-        if (isInit || newWrites > 0 || newReads > 0) {
-            if (newWrites > 0)
-                numWrites += newWrites;
-            if (newReads > 0)
-                numReads += newReads;
-            long currentTime = System.nanoTime();
-            if (isInit || currentTime - lastTime >= interval * 1000000000) {
-                if (!isInit)
-                    lastTime = currentTime;
-                fw.write((lastTime - startTime) + "\t" + numWrites + "\t" + numReads + "\n");
-            }
-        }
+        if (newWrites > 0)
+            numWrites += newWrites;
+        if (newReads > 0)
+            numReads += newReads;
+    }
+
+    private void flushFile() throws IOException {
+        fw.write((System.nanoTime() - startTime) + "\t" + numWrites + "\t" + numReads + "\n");
+        fw.flush();
     }
 }

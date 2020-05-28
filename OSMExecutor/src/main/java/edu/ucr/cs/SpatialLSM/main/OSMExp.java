@@ -13,6 +13,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
 import java.util.zip.GZIPInputStream;
@@ -107,6 +109,9 @@ public class OSMExp {
             InputStreamReader writeInReader = new InputStreamReader(writeStream, StandardCharsets.US_ASCII);
             BufferedReader writeReader = new BufferedReader(writeInReader);
 
+            ThroughputTimerTask timerTask = new ThroughputTimerTask();
+            Timer timer = new Timer();
+            timer.schedule(timerTask, config.getTInterval() * 1000, config.getTInterval() * 1000);
             ThroughputLogger.updateStats(0, 0);
 
             // Has a pre load phase
@@ -125,6 +130,8 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    timer.cancel();
+                    timer.purge();
                     writeReader.close();
                     writeInReader.close();
                     writeStream.close();
@@ -169,6 +176,8 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    timer.cancel();
+                    timer.purge();
                     readReader.close();
                     readInReader.close();
                     readStream.close();
@@ -210,6 +219,8 @@ public class OSMExp {
                     taskWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    timer.cancel();
+                    timer.purge();
                     readReader.close();
                     readInReader.close();
                     readStream.close();
@@ -246,6 +257,8 @@ public class OSMExp {
                             taskWriter.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
+                            timer.cancel();
+                            timer.purge();
                             readReader.close();
                             readInReader.close();
                             readStream.close();
@@ -269,6 +282,8 @@ public class OSMExp {
                             taskWriter.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
+                            timer.cancel();
+                            timer.purge();
                             readReader.close();
                             readInReader.close();
                             readStream.close();
@@ -293,6 +308,8 @@ public class OSMExp {
                 System.out.println("Generating " + config.getReadLogPath());
                 rw.sortMergeTmpFiles();
             }
+            timer.cancel();
+            timer.purge();
             ThroughputLogger.close();
             writeReader.close();
             writeInReader.close();
@@ -361,5 +378,12 @@ public class OSMExp {
         String[] parts = zipFile.replace("\\", "/").split("/");
         String base = parts[parts.length - 1];
         return base.substring(0, base.length() - 3) + "bin";
+    }
+
+    private static class ThroughputTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            ThroughputLogger.flush();
+        }
     }
 }

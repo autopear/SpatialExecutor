@@ -12,35 +12,52 @@ public class ThroughputLogger {
     private long numReads;
     private long startTime;
     private long lastTime;
+    private final FileWriter fw;
 
-    public static void updateStats(long newWrites, long newReads) {
+    public static synchronized void updateStats(long newWrites, long newReads) throws IOException {
         if (logger != null)
             logger.update(newWrites, newReads);
     }
 
     public static void createLogger(String logPath, int interval) {
-        if (logger == null)
-            logger = new ThroughputLogger(logPath, interval);
+        if (logger == null) {
+            try {
+                logger = new ThroughputLogger(logPath, interval);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     public static String logFilePath() {
         return logger == null ? "" : logger.getLogFilePath();
     }
 
-    public ThroughputLogger(String logPath, int interval) {
+    public static void close() throws IOException {
+        if (logger != null)
+            logger.closeWriter();
+    }
+
+    public ThroughputLogger(String logPath, int interval) throws IOException {
         this.logPath = logPath;
         this.interval = interval;
         numWrites = 0;
         numReads = 0;
         startTime = 0;
         lastTime = 0;
+        fw = new FileWriter(logPath, false);
     }
 
     private String getLogFilePath() {
         return logPath;
     }
 
-    private synchronized void update(long newWrites, long newReads) {
+    private void closeWriter() throws IOException {
+        fw.write((System.nanoTime() - startTime) + "\t" + numWrites + "\t" + numReads + "\n");
+        fw.close();
+    }
+
+    private void update(long newWrites, long newReads) throws IOException {
         boolean isInit = false;
         if (startTime == 0) {
             startTime = System.nanoTime();
@@ -56,15 +73,8 @@ public class ThroughputLogger {
             if (isInit || currentTime - lastTime >= interval * 1000000000) {
                 if (!isInit)
                     lastTime = currentTime;
-                try {
-                    FileWriter fw = new FileWriter(logPath, true);
-                    fw.write((lastTime - startTime) + "\t" + numWrites + "\t" + numReads + "\n");
-                    fw.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                fw.write((lastTime - startTime) + "\t" + numWrites + "\t" + numReads + "\n");
             }
         }
     }
-
 }

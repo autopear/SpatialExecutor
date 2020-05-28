@@ -293,6 +293,7 @@ public class OSMExp {
                 System.out.println("Generating " + config.getReadLogPath());
                 rw.sortMergeTmpFiles();
             }
+            ThroughputLogger.close();
             writeReader.close();
             writeInReader.close();
             writeStream.close();

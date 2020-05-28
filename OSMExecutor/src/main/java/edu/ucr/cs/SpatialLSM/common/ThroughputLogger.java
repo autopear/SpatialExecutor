@@ -54,10 +54,11 @@ public class ThroughputLogger {
                 numReads += newReads;
             long currentTime = System.nanoTime();
             if (isInit || currentTime - lastTime >= interval * 1000000000) {
-                lastTime = currentTime;
+                if (!isInit)
+                    lastTime = currentTime;
                 try {
                     FileWriter fw = new FileWriter(logPath, true);
-                    fw.write(lastTime + "\t" + numWrites + "\t" + numReads + "\n");
+                    fw.write((lastTime - startTime) + "\t" + numWrites + "\t" + numReads + "\n");
                     fw.close();
                 } catch (IOException ex) {
                     ex.printStackTrace();

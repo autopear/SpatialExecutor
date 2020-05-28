@@ -14,9 +14,14 @@ public class ThroughputLogger {
     private long lastTime;
     private final FileWriter fw;
 
-    public static synchronized void updateStats(long newWrites, long newReads) throws IOException {
-        if (logger != null)
-            logger.update(newWrites, newReads);
+    public static synchronized void updateStats(long newWrites, long newReads) {
+        if (logger != null) {
+            try {
+                logger.update(newWrites, newReads);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     public static void createLogger(String logPath, int interval) {

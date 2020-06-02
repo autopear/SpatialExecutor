@@ -94,6 +94,10 @@ public class ReadWorker extends IOWoker {
             for (int i = 0; i < config.getBatchSizeRead(); i++) {
                 String line = reader.readLine().replace("\n", "");
                 String[] nums = line.split("\t");
+                if (nums.length != 3) {
+                    Utils.print("Invalid read line: " + line + "\n");
+                    continue;
+                }
                 exps[i] = Double.parseDouble(nums[0]);
                 xs[i] = Double.parseDouble(nums[1]);
                 ys[i] = Double.parseDouble(nums[2]);

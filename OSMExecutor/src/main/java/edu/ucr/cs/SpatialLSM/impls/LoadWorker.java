@@ -47,11 +47,16 @@ public class LoadWorker extends IOWoker {
                 for (long performedOps = 0; getTotoalOps() < 1 || performedOps < getTotoalOps(); performedOps++) {
                     String line = reader.readLine();
                     String[] nums = line.replace("\n", "").split("\t");
+                    if (nums.length != 2) {
+                        Utils.print("Invalid load line: " + line + "\n");
+                        continue;
+                    }
                     double lon = Double.parseDouble(nums[0]);
                     double lat = Double.parseDouble(nums[1]);
                     feedWriter.write(config.newRecord(pkid, lon, lat));
                     showProgress(false);
                     ThroughputLogger.updateStats(1, 0);
+                    Utils.print("Load " + performedOps + ":" + getTotoalOps() + ", lon=" + lon + ", lat=" + lat + "\n");
                     if (getTotoalOps() < 1 && startTime > 0 && System.currentTimeMillis() - startTime >= config.getDuration())
                         break;
                     if (config.getSleepLoad() > 0) {
@@ -69,6 +74,7 @@ public class LoadWorker extends IOWoker {
                             break;
                     }
                 }
+                feedWriter.close();
                 sock.close();
             } catch (IOException e) {
                 e.printStackTrace();
